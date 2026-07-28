@@ -1,0 +1,15 @@
+# Dart / Flutter
+app/.dart_tool/
+app/build/
+app/pubspec.lock
+
+# Node
+server/node_modules/
+server/dist/
+server/coverage/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store

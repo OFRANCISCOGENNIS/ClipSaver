@@ -1,0 +1,15 @@
+name: vidora
+description: >-
+  Vidora — gerenciador multiplataforma de downloads autorizados.
+  Fase 1: pacote Dart puro contendo a camada de domínio; o alvo Flutter
+  (presentation/application/infrastructure) é adicionado nas fases 2–3
+  sem alterar este domínio, que permanece livre de dependências de framework.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
