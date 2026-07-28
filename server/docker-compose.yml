@@ -1,0 +1,51 @@
+# Local development stack (section 17 item 8): API + Postgres + Redis.
+# Usage: docker compose up --build
+services:
+  api:
+    build:
+      context: .
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DATABASE_URL: postgresql://vidora:vidora@postgres:5432/vidora
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-compose-secret-0123456789abcdef
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src:ro
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vidora
+      POSTGRES_PASSWORD: vidora
+      POSTGRES_DB: vidora
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vidora"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
