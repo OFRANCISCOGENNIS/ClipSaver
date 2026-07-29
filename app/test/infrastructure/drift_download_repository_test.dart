@@ -1,5 +1,5 @@
 import 'package:drift/native.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/domain/value_objects/checksum.dart';
 import 'package:vidora/core/domain/value_objects/file_size.dart';
 import 'package:vidora/core/domain/value_objects/media_format.dart';
@@ -30,6 +30,7 @@ void main() {
           codec: 'h264',
           height: 720,
         ),
+        sourceUrl: 'https://files.example.com/a.mp4',
         destinationPath: '/downloads/$id.mp4',
         priority: priority,
         totalBytes: FileSize.ofBytes(1000),
@@ -51,6 +52,7 @@ void main() {
         container: 'mp3',
         bitrateKbps: 192,
       ),
+      sourceUrl: 'https://files.example.com/a.mp4',
       destinationPath: '/d/a.mp3',
       expectedChecksum: checksum,
       totalBytes: FileSize.ofBytes(500),

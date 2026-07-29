@@ -61,6 +61,12 @@ class $DownloadTaskRowsTable extends DownloadTaskRows
   late final GeneratedColumn<int> formatBitrateKbps = GeneratedColumn<int>(
       'format_bitrate_kbps', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sourceUrlMeta =
+      const VerificationMeta('sourceUrl');
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+      'source_url', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _destinationPathMeta =
       const VerificationMeta('destinationPath');
   @override
@@ -137,6 +143,7 @@ class $DownloadTaskRowsTable extends DownloadTaskRows
         formatCodec,
         formatHeight,
         formatBitrateKbps,
+        sourceUrl,
         destinationPath,
         state,
         bytesDownloaded,
@@ -216,6 +223,12 @@ class $DownloadTaskRowsTable extends DownloadTaskRows
           _formatBitrateKbpsMeta,
           formatBitrateKbps.isAcceptableOrUnknown(
               data['format_bitrate_kbps']!, _formatBitrateKbpsMeta));
+    }
+    if (data.containsKey('source_url')) {
+      context.handle(_sourceUrlMeta,
+          sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta));
+    } else if (isInserting) {
+      context.missing(_sourceUrlMeta);
     }
     if (data.containsKey('destination_path')) {
       context.handle(
@@ -304,6 +317,8 @@ class $DownloadTaskRowsTable extends DownloadTaskRows
           .read(DriftSqlType.int, data['${effectivePrefix}format_height']),
       formatBitrateKbps: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}format_bitrate_kbps']),
+      sourceUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_url'])!,
       destinationPath: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}destination_path'])!,
       state: attachedDatabase.typeMapping
@@ -361,6 +376,9 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
   /// Average bitrate, when known.
   final int? formatBitrateKbps;
 
+  /// Resolved source URL, so a queued download resumes after a restart.
+  final String sourceUrl;
+
   /// Final destination path.
   final String destinationPath;
 
@@ -400,6 +418,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
       this.formatCodec,
       this.formatHeight,
       this.formatBitrateKbps,
+      required this.sourceUrl,
       required this.destinationPath,
       required this.state,
       required this.bytesDownloaded,
@@ -428,6 +447,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
     if (!nullToAbsent || formatBitrateKbps != null) {
       map['format_bitrate_kbps'] = Variable<int>(formatBitrateKbps);
     }
+    map['source_url'] = Variable<String>(sourceUrl);
     map['destination_path'] = Variable<String>(destinationPath);
     map['state'] = Variable<String>(state);
     map['bytes_downloaded'] = Variable<int>(bytesDownloaded);
@@ -466,6 +486,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
       formatBitrateKbps: formatBitrateKbps == null && nullToAbsent
           ? const Value.absent()
           : Value(formatBitrateKbps),
+      sourceUrl: Value(sourceUrl),
       destinationPath: Value(destinationPath),
       state: Value(state),
       bytesDownloaded: Value(bytesDownloaded),
@@ -500,6 +521,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
       formatCodec: serializer.fromJson<String?>(json['formatCodec']),
       formatHeight: serializer.fromJson<int?>(json['formatHeight']),
       formatBitrateKbps: serializer.fromJson<int?>(json['formatBitrateKbps']),
+      sourceUrl: serializer.fromJson<String>(json['sourceUrl']),
       destinationPath: serializer.fromJson<String>(json['destinationPath']),
       state: serializer.fromJson<String>(json['state']),
       bytesDownloaded: serializer.fromJson<int>(json['bytesDownloaded']),
@@ -526,6 +548,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
       'formatCodec': serializer.toJson<String?>(formatCodec),
       'formatHeight': serializer.toJson<int?>(formatHeight),
       'formatBitrateKbps': serializer.toJson<int?>(formatBitrateKbps),
+      'sourceUrl': serializer.toJson<String>(sourceUrl),
       'destinationPath': serializer.toJson<String>(destinationPath),
       'state': serializer.toJson<String>(state),
       'bytesDownloaded': serializer.toJson<int>(bytesDownloaded),
@@ -549,6 +572,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
           Value<String?> formatCodec = const Value.absent(),
           Value<int?> formatHeight = const Value.absent(),
           Value<int?> formatBitrateKbps = const Value.absent(),
+          String? sourceUrl,
           String? destinationPath,
           String? state,
           int? bytesDownloaded,
@@ -572,6 +596,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
         formatBitrateKbps: formatBitrateKbps.present
             ? formatBitrateKbps.value
             : this.formatBitrateKbps,
+        sourceUrl: sourceUrl ?? this.sourceUrl,
         destinationPath: destinationPath ?? this.destinationPath,
         state: state ?? this.state,
         bytesDownloaded: bytesDownloaded ?? this.bytesDownloaded,
@@ -606,6 +631,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
       formatBitrateKbps: data.formatBitrateKbps.present
           ? data.formatBitrateKbps.value
           : this.formatBitrateKbps,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
       destinationPath: data.destinationPath.present
           ? data.destinationPath.value
           : this.destinationPath,
@@ -642,6 +668,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
           ..write('formatCodec: $formatCodec, ')
           ..write('formatHeight: $formatHeight, ')
           ..write('formatBitrateKbps: $formatBitrateKbps, ')
+          ..write('sourceUrl: $sourceUrl, ')
           ..write('destinationPath: $destinationPath, ')
           ..write('state: $state, ')
           ..write('bytesDownloaded: $bytesDownloaded, ')
@@ -667,6 +694,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
       formatCodec,
       formatHeight,
       formatBitrateKbps,
+      sourceUrl,
       destinationPath,
       state,
       bytesDownloaded,
@@ -690,6 +718,7 @@ class DownloadTaskRow extends DataClass implements Insertable<DownloadTaskRow> {
           other.formatCodec == this.formatCodec &&
           other.formatHeight == this.formatHeight &&
           other.formatBitrateKbps == this.formatBitrateKbps &&
+          other.sourceUrl == this.sourceUrl &&
           other.destinationPath == this.destinationPath &&
           other.state == this.state &&
           other.bytesDownloaded == this.bytesDownloaded &&
@@ -712,6 +741,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
   final Value<String?> formatCodec;
   final Value<int?> formatHeight;
   final Value<int?> formatBitrateKbps;
+  final Value<String> sourceUrl;
   final Value<String> destinationPath;
   final Value<String> state;
   final Value<int> bytesDownloaded;
@@ -733,6 +763,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
     this.formatCodec = const Value.absent(),
     this.formatHeight = const Value.absent(),
     this.formatBitrateKbps = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
     this.destinationPath = const Value.absent(),
     this.state = const Value.absent(),
     this.bytesDownloaded = const Value.absent(),
@@ -755,6 +786,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
     this.formatCodec = const Value.absent(),
     this.formatHeight = const Value.absent(),
     this.formatBitrateKbps = const Value.absent(),
+    required String sourceUrl,
     required String destinationPath,
     required String state,
     this.bytesDownloaded = const Value.absent(),
@@ -772,6 +804,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
         formatId = Value(formatId),
         formatKind = Value(formatKind),
         formatContainer = Value(formatContainer),
+        sourceUrl = Value(sourceUrl),
         destinationPath = Value(destinationPath),
         state = Value(state),
         createdAt = Value(createdAt);
@@ -785,6 +818,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
     Expression<String>? formatCodec,
     Expression<int>? formatHeight,
     Expression<int>? formatBitrateKbps,
+    Expression<String>? sourceUrl,
     Expression<String>? destinationPath,
     Expression<String>? state,
     Expression<int>? bytesDownloaded,
@@ -807,6 +841,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
       if (formatCodec != null) 'format_codec': formatCodec,
       if (formatHeight != null) 'format_height': formatHeight,
       if (formatBitrateKbps != null) 'format_bitrate_kbps': formatBitrateKbps,
+      if (sourceUrl != null) 'source_url': sourceUrl,
       if (destinationPath != null) 'destination_path': destinationPath,
       if (state != null) 'state': state,
       if (bytesDownloaded != null) 'bytes_downloaded': bytesDownloaded,
@@ -831,6 +866,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
       Value<String?>? formatCodec,
       Value<int?>? formatHeight,
       Value<int?>? formatBitrateKbps,
+      Value<String>? sourceUrl,
       Value<String>? destinationPath,
       Value<String>? state,
       Value<int>? bytesDownloaded,
@@ -852,6 +888,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
       formatCodec: formatCodec ?? this.formatCodec,
       formatHeight: formatHeight ?? this.formatHeight,
       formatBitrateKbps: formatBitrateKbps ?? this.formatBitrateKbps,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
       destinationPath: destinationPath ?? this.destinationPath,
       state: state ?? this.state,
       bytesDownloaded: bytesDownloaded ?? this.bytesDownloaded,
@@ -895,6 +932,9 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
     }
     if (formatBitrateKbps.present) {
       map['format_bitrate_kbps'] = Variable<int>(formatBitrateKbps.value);
+    }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
     }
     if (destinationPath.present) {
       map['destination_path'] = Variable<String>(destinationPath.value);
@@ -944,6 +984,7 @@ class DownloadTaskRowsCompanion extends UpdateCompanion<DownloadTaskRow> {
           ..write('formatCodec: $formatCodec, ')
           ..write('formatHeight: $formatHeight, ')
           ..write('formatBitrateKbps: $formatBitrateKbps, ')
+          ..write('sourceUrl: $sourceUrl, ')
           ..write('destinationPath: $destinationPath, ')
           ..write('state: $state, ')
           ..write('bytesDownloaded: $bytesDownloaded, ')
@@ -2294,6 +2335,7 @@ typedef $$DownloadTaskRowsTableCreateCompanionBuilder
   Value<String?> formatCodec,
   Value<int?> formatHeight,
   Value<int?> formatBitrateKbps,
+  required String sourceUrl,
   required String destinationPath,
   required String state,
   Value<int> bytesDownloaded,
@@ -2317,6 +2359,7 @@ typedef $$DownloadTaskRowsTableUpdateCompanionBuilder
   Value<String?> formatCodec,
   Value<int?> formatHeight,
   Value<int?> formatBitrateKbps,
+  Value<String> sourceUrl,
   Value<String> destinationPath,
   Value<String> state,
   Value<int> bytesDownloaded,
@@ -2367,6 +2410,9 @@ class $$DownloadTaskRowsTableFilterComposer
   ColumnFilters<int> get formatBitrateKbps => $composableBuilder(
       column: $table.formatBitrateKbps,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sourceUrl => $composableBuilder(
+      column: $table.sourceUrl, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get destinationPath => $composableBuilder(
       column: $table.destinationPath,
@@ -2441,6 +2487,9 @@ class $$DownloadTaskRowsTableOrderingComposer
       column: $table.formatBitrateKbps,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get sourceUrl => $composableBuilder(
+      column: $table.sourceUrl, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get destinationPath => $composableBuilder(
       column: $table.destinationPath,
       builder: (column) => ColumnOrderings(column));
@@ -2512,6 +2561,9 @@ class $$DownloadTaskRowsTableAnnotationComposer
   GeneratedColumn<int> get formatBitrateKbps => $composableBuilder(
       column: $table.formatBitrateKbps, builder: (column) => column);
 
+  GeneratedColumn<String> get sourceUrl =>
+      $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
+
   GeneratedColumn<String> get destinationPath => $composableBuilder(
       column: $table.destinationPath, builder: (column) => column);
 
@@ -2579,6 +2631,7 @@ class $$DownloadTaskRowsTableTableManager extends RootTableManager<
             Value<String?> formatCodec = const Value.absent(),
             Value<int?> formatHeight = const Value.absent(),
             Value<int?> formatBitrateKbps = const Value.absent(),
+            Value<String> sourceUrl = const Value.absent(),
             Value<String> destinationPath = const Value.absent(),
             Value<String> state = const Value.absent(),
             Value<int> bytesDownloaded = const Value.absent(),
@@ -2601,6 +2654,7 @@ class $$DownloadTaskRowsTableTableManager extends RootTableManager<
             formatCodec: formatCodec,
             formatHeight: formatHeight,
             formatBitrateKbps: formatBitrateKbps,
+            sourceUrl: sourceUrl,
             destinationPath: destinationPath,
             state: state,
             bytesDownloaded: bytesDownloaded,
@@ -2623,6 +2677,7 @@ class $$DownloadTaskRowsTableTableManager extends RootTableManager<
             Value<String?> formatCodec = const Value.absent(),
             Value<int?> formatHeight = const Value.absent(),
             Value<int?> formatBitrateKbps = const Value.absent(),
+            required String sourceUrl,
             required String destinationPath,
             required String state,
             Value<int> bytesDownloaded = const Value.absent(),
@@ -2645,6 +2700,7 @@ class $$DownloadTaskRowsTableTableManager extends RootTableManager<
             formatCodec: formatCodec,
             formatHeight: formatHeight,
             formatBitrateKbps: formatBitrateKbps,
+            sourceUrl: sourceUrl,
             destinationPath: destinationPath,
             state: state,
             bytesDownloaded: bytesDownloaded,

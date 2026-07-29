@@ -27,6 +27,12 @@ export interface MediaFormat {
   height?: number;
   bitrateKbps?: number;
   estimatedSizeBytes?: number;
+  /**
+   * Direct URL of this rendition when the origin exposes a per-format
+   * address. Omitted for direct-file results, where the analyzed URL is
+   * itself the rendition.
+   */
+  url?: string;
 }
 
 /** The engine's verdict — the exact contract from section 2.2. */

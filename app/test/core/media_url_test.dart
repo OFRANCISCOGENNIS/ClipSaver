@@ -1,4 +1,4 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/domain/value_objects/media_url.dart';
 import 'package:vidora/core/error/failures.dart';
 

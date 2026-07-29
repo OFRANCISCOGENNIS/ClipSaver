@@ -1,4 +1,4 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/domain/value_objects/media_format.dart';
 import 'package:vidora/features/analyze/domain/authorization_source.dart';
 import 'package:vidora/features/analyze/domain/eligibility_result.dart';

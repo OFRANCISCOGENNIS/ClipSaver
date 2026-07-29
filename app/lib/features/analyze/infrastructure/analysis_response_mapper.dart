@@ -95,6 +95,7 @@ List<MediaFormat> mapWireFormats(Object? raw) {
       estimatedSize: format['estimatedSizeBytes'] == null
           ? null
           : FileSize.ofBytes((format['estimatedSizeBytes'] as num).toInt()),
+      url: format['url'] as String?,
     );
   }).toList(growable: false);
 }

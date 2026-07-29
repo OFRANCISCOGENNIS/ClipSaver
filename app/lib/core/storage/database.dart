@@ -40,6 +40,9 @@ class DownloadTaskRows extends Table {
   /// Average bitrate, when known.
   IntColumn get formatBitrateKbps => integer().nullable()();
 
+  /// Resolved source URL, so a queued download resumes after a restart.
+  TextColumn get sourceUrl => text()();
+
   /// Final destination path.
   TextColumn get destinationPath => text()();
 

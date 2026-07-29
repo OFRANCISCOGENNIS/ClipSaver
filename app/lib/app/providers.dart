@@ -1,0 +1,122 @@
+/// Global dependency injection (section 4.1: DI via Riverpod).
+///
+/// Responsibility: build the infrastructure graph once and expose it as
+/// providers. Everything here is overridable, which is what lets tests
+/// swap the network, the database and the filesystem for fakes without
+/// touching a single ViewModel.
+library;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../core/network/api_client.dart';
+import '../core/network/dio_api_client.dart';
+import '../core/platform/clipboard_reader.dart';
+import '../core/storage/database.dart';
+import '../core/storage/download_file_system.dart';
+import '../features/analyze/domain/analyze_repository.dart';
+import '../features/analyze/infrastructure/analyze_repository_impl.dart';
+import '../features/downloads/application/download_manager.dart';
+import '../features/downloads/domain/download_repository.dart';
+import '../features/downloads/infrastructure/dio_download_transport.dart';
+import '../features/downloads/infrastructure/download_engine.dart';
+import '../features/downloads/infrastructure/download_transport.dart';
+import '../features/downloads/infrastructure/drift_download_repository.dart';
+import '../features/library/domain/library_repository.dart';
+import '../features/library/infrastructure/drift_library_repository.dart';
+
+/// Base URL of the Vidora API.
+///
+/// Overridden per flavor at bootstrap; the default points at the local
+/// docker-compose stack so a fresh checkout runs without configuration.
+final apiBaseUrlProvider = Provider<String>(
+  (ref) => const String.fromEnvironment(
+    'VIDORA_API_BASE_URL',
+    defaultValue: 'http://localhost:3000',
+  ),
+);
+
+/// The local database. Overridden in tests with an in-memory executor.
+final databaseProvider = Provider<AppDatabase>(
+  (ref) => throw UnimplementedError(
+    'databaseProvider must be overridden at bootstrap with the opened '
+    'AppDatabase — opening it requires an async platform path lookup.',
+  ),
+);
+
+/// Directory where finished downloads are written.
+///
+/// Overridden at bootstrap with the platform's Downloads/Documents path;
+/// resolving it needs an async platform call, so it cannot be a default.
+final downloadsDirectoryProvider = Provider<String>(
+  (ref) => throw UnimplementedError(
+    'downloadsDirectoryProvider must be overridden at bootstrap with the '
+    'platform downloads directory.',
+  ),
+);
+
+/// HTTP client for the Vidora API.
+final apiClientProvider = Provider<ApiClient>(
+  (ref) => DioApiClient(baseUrl: ref.watch(apiBaseUrlProvider)),
+);
+
+/// Platform clipboard access.
+final clipboardReaderProvider =
+    Provider<ClipboardReader>((ref) => const SystemClipboardReader());
+
+/// Filesystem used by the download engine.
+///
+/// Overridden at bootstrap with the platform implementation — it cannot
+/// default here, because importing the `dart:io` one unconditionally
+/// would break the Web build.
+final downloadFileSystemProvider = Provider<DownloadFileSystem>(
+  (ref) => throw UnimplementedError(
+    'downloadFileSystemProvider must be overridden at bootstrap with the '
+    'platform filesystem.',
+  ),
+);
+
+/// Byte transport used by the download engine.
+final downloadTransportProvider =
+    Provider<DownloadTransport>((ref) => DioDownloadTransport());
+
+/// Analysis + eligibility gateway.
+final analyzeRepositoryProvider = Provider<AnalyzeRepository>(
+  (ref) => AnalyzeRepositoryImpl(
+    client: ref.watch(apiClientProvider),
+    db: ref.watch(databaseProvider),
+  ),
+);
+
+/// Download queue persistence.
+final downloadRepositoryProvider = Provider<DownloadRepository>(
+  (ref) => DriftDownloadRepository(ref.watch(databaseProvider)),
+);
+
+/// Library persistence.
+final libraryRepositoryProvider = Provider<LibraryRepository>(
+  (ref) => DriftLibraryRepository(ref.watch(databaseProvider)),
+);
+
+/// The byte-transfer engine.
+final downloadEngineProvider = Provider<DownloadEngine>(
+  (ref) => DownloadEngine(
+    transport: ref.watch(downloadTransportProvider),
+    fileSystem: ref.watch(downloadFileSystemProvider),
+  ),
+);
+
+/// Maximum parallel downloads (section 8.2: 1–8, default 3). Settings
+/// writes to this in phase 5.
+final maxConcurrentDownloadsProvider = Provider<int>((ref) => 3);
+
+/// The queue scheduler. Disposed with the container so in-flight
+/// transfers are canceled instead of leaking.
+final downloadManagerProvider = Provider<DownloadManager>((ref) {
+  final manager = DownloadManager(
+    repository: ref.watch(downloadRepositoryProvider),
+    engine: ref.watch(downloadEngineProvider),
+    maxConcurrent: ref.watch(maxConcurrentDownloadsProvider),
+  );
+  ref.onDispose(manager.dispose);
+  return manager;
+});

@@ -89,6 +89,7 @@ final class AnalyzeRepositoryImpl implements AnalyzeRepository {
                     if (f.bitrateKbps != null) 'bitrateKbps': f.bitrateKbps,
                     if (f.estimatedSize != null)
                       'estimatedSizeBytes': f.estimatedSize!.bytes,
+                    if (f.url != null) 'url': f.url,
                   },
               ]),
             ),

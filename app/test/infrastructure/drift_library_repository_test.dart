@@ -1,5 +1,5 @@
 import 'package:drift/native.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/domain/value_objects/file_size.dart';
 import 'package:vidora/core/domain/value_objects/license.dart';
 import 'package:vidora/core/domain/value_objects/media_format.dart';

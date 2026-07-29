@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/error/failures.dart';
 import 'package:vidora/core/network/dio_api_client.dart';
 

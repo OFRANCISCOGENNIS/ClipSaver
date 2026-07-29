@@ -21,6 +21,7 @@ final class DownloadTask {
     required this.mediaItemId,
     required this.title,
     required this.format,
+    required this.sourceUrl,
     required this.destinationPath,
     this.state = DownloadState.queued,
     this.bytesDownloaded = FileSize.zero,
@@ -37,6 +38,9 @@ final class DownloadTask {
     }
     if (destinationPath.trim().isEmpty) {
       throw ArgumentError('destinationPath must not be empty');
+    }
+    if (sourceUrl.trim().isEmpty) {
+      throw ArgumentError('sourceUrl must not be empty');
     }
     if (priority < 0) throw ArgumentError('priority must be >= 0');
     if (retryCount < 0 || retryCount > maxRetries) {
@@ -64,6 +68,11 @@ final class DownloadTask {
 
   /// The exact rendition being downloaded.
   final MediaFormat format;
+
+  /// Resolved, authorized URL of the bytes. Stored on the task so a queued
+  /// or paused download survives an app restart without re-analyzing —
+  /// and so the transfer never has to re-derive it at run time.
+  final String sourceUrl;
 
   /// Final path. While active, bytes live in `<path>.vidora-part` and are
   /// moved atomically on completion (section 8.3).
@@ -179,6 +188,7 @@ final class DownloadTask {
         mediaItemId: mediaItemId,
         title: title,
         format: format,
+        sourceUrl: sourceUrl,
         destinationPath: destinationPath,
         state: state ?? this.state,
         bytesDownloaded: bytesDownloaded ?? this.bytesDownloaded,

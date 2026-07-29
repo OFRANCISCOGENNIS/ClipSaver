@@ -1,4 +1,4 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/domain/value_objects/file_size.dart';
 import 'package:vidora/core/domain/value_objects/media_format.dart';
 import 'package:vidora/core/error/failures.dart';
@@ -19,6 +19,7 @@ void main() {
         mediaItemId: 'm1',
         title: 'Episódio 12',
         format: format,
+        sourceUrl: 'https://files.example.com/a.mp4',
         destinationPath: '/downloads/ep12.mp3',
         state: state,
         totalBytes: FileSize.ofBytes(1000),
@@ -176,6 +177,7 @@ void main() {
         mediaItemId: 'm1',
         title: 'x',
         format: format,
+        sourceUrl: 'https://files.example.com/a.mp4',
         destinationPath: '/d/x.mp3',
         state: DownloadState.downloading,
         bytesDownloaded: FileSize.ofBytes(500),
@@ -196,6 +198,7 @@ void main() {
           mediaItemId: 'm1',
           title: 'x',
           format: format,
+          sourceUrl: 'https://files.example.com/a.mp4',
           destinationPath: '/d/x.mp3',
           bytesDownloaded: FileSize.ofBytes(11),
           totalBytes: FileSize.ofBytes(10),
@@ -211,6 +214,7 @@ void main() {
           mediaItemId: 'm1',
           title: 'x',
           format: format,
+          sourceUrl: 'https://files.example.com/a.mp4',
           destinationPath: '/d/x.mp3',
         ),
         throwsArgumentError,

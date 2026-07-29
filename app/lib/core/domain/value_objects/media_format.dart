@@ -28,6 +28,7 @@ final class MediaFormat {
     this.height,
     this.bitrateKbps,
     this.estimatedSize,
+    this.url,
   })  : assert(id != ''),
         assert(
           kind == MediaKind.video || height == null,
@@ -54,6 +55,11 @@ final class MediaFormat {
 
   /// Size estimate for the quality chips (section 7.2 item 4).
   final FileSize? estimatedSize;
+
+  /// Direct URL of this rendition, when the origin exposes a per-format
+  /// address. Null for direct-file results, where the analyzed URL *is*
+  /// the rendition.
+  final String? url;
 
   /// Label for the resolution/quality chip: "1080p", "320 kbps" or the
   /// container as last resort.

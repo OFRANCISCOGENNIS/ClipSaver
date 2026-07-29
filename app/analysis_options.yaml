@@ -23,5 +23,6 @@ linter:
     - prefer_const_declarations
     - prefer_final_locals
     - public_member_api_docs
-    - require_trailing_commas
+    # `require_trailing_commas` is intentionally absent: since Dart 3.7 the
+    # formatter owns comma placement, and the rule fights `dart format`.
     - unawaited_futures
