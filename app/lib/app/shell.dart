@@ -32,6 +32,21 @@ class VidoraShell extends StatelessWidget {
       icon: Icons.download_outlined,
       selectedIcon: Icons.download,
     ),
+    _Destination(
+      label: 'Biblioteca',
+      icon: Icons.video_library_outlined,
+      selectedIcon: Icons.video_library,
+    ),
+    _Destination(
+      label: 'Buscar',
+      icon: Icons.manage_search_outlined,
+      selectedIcon: Icons.manage_search,
+    ),
+    _Destination(
+      label: 'Converter',
+      icon: Icons.swap_horiz_outlined,
+      selectedIcon: Icons.swap_horiz,
+    ),
   ];
 
   void _go(int index) => navigationShell.goBranch(

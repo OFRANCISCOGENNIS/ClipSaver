@@ -45,6 +45,6 @@ código-fonte, por isso não são versionados.
 | 1 | Domínio + modelo de autorização + testes | ✅ concluída |
 | 2 | Backend (eligibility + analysis) + infraestrutura local do app | ✅ concluída |
 | 3 | Telas Analyze e Downloads | ✅ concluída |
-| 4 | Library, Search e Converter | ⏳ |
+| 4 | Library, Search e Converter | ✅ concluída |
 | 5 | Premium, IA, Settings e polimento | ⏳ |
 | 6 | CI/CD, builds de release e documentação final | ⏳ |

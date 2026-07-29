@@ -1,7 +1,10 @@
 /// drift-backed implementation of [LibraryRepository].
 ///
 /// Responsibility: map [LibraryEntryRows] to the domain entity and back,
-/// implement tab queries/sorting and the trash lifecycle (section 9).
+/// implement tab queries/sorting and the trash lifecycle (section 9), and
+/// keep the FTS5 index in step with every write — index maintenance is
+/// deliberately here, in the same transaction as the row, rather than in
+/// a trigger the Dart side cannot see.
 library;
 
 import 'dart:convert';
@@ -14,22 +17,39 @@ import '../../../core/domain/value_objects/media_format.dart';
 import '../../../core/error/failures.dart';
 import '../../../core/error/result.dart';
 import '../../../core/storage/database.dart';
+import '../../../core/storage/search_index.dart';
 import '../domain/library_entry.dart';
 import '../domain/library_repository.dart';
 
 /// Persists the library in the local database.
 final class DriftLibraryRepository implements LibraryRepository {
   /// Creates the repository over [db].
-  DriftLibraryRepository(this._db);
+  DriftLibraryRepository(this._db) : _index = SearchIndex(_db);
 
   final AppDatabase _db;
+  final SearchIndex _index;
 
   @override
   Future<Result<LibraryEntry>> save(LibraryEntry entry) async {
     try {
-      await _db
-          .into(_db.libraryEntryRows)
-          .insertOnConflictUpdate(_toRow(entry));
+      await _db.transaction(() async {
+        await _db
+            .into(_db.libraryEntryRows)
+            .insertOnConflictUpdate(_toRow(entry));
+        // Trashed entries leave the index: they must not surface in search
+        // until the user restores them.
+        if (entry.status == LibraryFileStatus.trashed) {
+          await _index.remove(entry.id);
+        } else {
+          await _index.upsert(
+            entryId: entry.id,
+            title: entry.title,
+            author: entry.author,
+            platform: entry.platform,
+            tags: entry.tags,
+          );
+        }
+      });
       return Result.ok(entry);
     } on Exception {
       return const Result.err(StorageFailure('Falha ao gravar o item.'));
@@ -64,26 +84,57 @@ final class DriftLibraryRepository implements LibraryRepository {
       if (favoritesOnly) {
         query.where((t) => t.favorite.equals(true));
       }
-      query.orderBy([
-        (t) {
-          final mode = descending ? OrderingMode.desc : OrderingMode.asc;
-          return switch (sort) {
-            LibrarySort.downloadedAt =>
-              OrderingTerm(expression: t.downloadedAt, mode: mode),
-            LibrarySort.name => OrderingTerm(expression: t.title, mode: mode),
-            LibrarySort.size =>
-              OrderingTerm(expression: t.sizeBytes, mode: mode),
-            LibrarySort.duration =>
-              OrderingTerm(expression: t.durationMs, mode: mode),
-            LibrarySort.platform =>
-              OrderingTerm(expression: t.platform, mode: mode),
-          };
-        },
-      ]);
+      query.orderBy([(t) => _orderingFor(t, sort, descending)]);
       final rows = await query.get();
       return Result.ok(rows.map(_toEntity).toList(growable: false));
     } on Exception {
       return const Result.err(StorageFailure('Falha ao listar a biblioteca.'));
+    }
+  }
+
+  @override
+  Future<Result<List<LibraryEntry>>> listTrashed() async {
+    try {
+      final rows = await (_db.select(_db.libraryEntryRows)
+            ..where((t) => t.status.equals(LibraryFileStatus.trashed.name))
+            ..orderBy([(t) => OrderingTerm.desc(t.trashedAt)]))
+          .get();
+      return Result.ok(rows.map(_toEntity).toList(growable: false));
+    } on Exception {
+      return const Result.err(StorageFailure('Falha ao listar a lixeira.'));
+    }
+  }
+
+  @override
+  Future<Result<LibraryCounts>> counts() async {
+    try {
+      final rows = await _db.select(_db.libraryEntryRows).get();
+      var videos = 0;
+      var audios = 0;
+      var favorites = 0;
+      var trashed = 0;
+      for (final row in rows) {
+        if (row.status == LibraryFileStatus.trashed.name) {
+          trashed++;
+          continue;
+        }
+        if (row.kind == MediaKind.video.name) {
+          videos++;
+        } else {
+          audios++;
+        }
+        if (row.favorite) favorites++;
+      }
+      return Result.ok(
+        LibraryCounts(
+          videos: videos,
+          audios: audios,
+          favorites: favorites,
+          trashed: trashed,
+        ),
+      );
+    } on Exception {
+      return const Result.err(StorageFailure('Falha ao contar os itens.'));
     }
   }
 
@@ -94,12 +145,63 @@ final class DriftLibraryRepository implements LibraryRepository {
       .map((rows) => rows.map(_toEntity).toList(growable: false));
 
   @override
-  Future<Result<LibraryEntry>> moveToTrash(String id, DateTime now) =>
+  Future<Result<LibraryEntry>> rename(String id, String title) =>
+      _transition(id, (entry) {
+        if (title.trim().isEmpty) {
+          return const Result.err(
+            ValidationFailure('O nome não pode ficar vazio.'),
+          );
+        }
+        return Result.ok(entry.copyWith(title: title.trim()));
+      });
+
+  @override
+  Future<Result<LibraryEntry>> setTags(String id, List<String> tags) =>
+      _transition(id, (entry) {
+        // Normalize here so the search index and the chips agree on what a
+        // tag is: trimmed, lowercase, no blanks, no duplicates.
+        final normalized = <String>{
+          for (final tag in tags)
+            if (tag.trim().isNotEmpty) tag.trim().toLowerCase(),
+        }.toList()
+          ..sort();
+        return Result.ok(entry.copyWith(tags: normalized));
+      });
+
+  @override
+  Future<Result<LibraryEntry>> setFavorite(
+    String id, {
+    required bool favorite,
+  }) =>
+      _transition(id, (entry) => Result.ok(entry.copyWith(favorite: favorite)));
+
+  @override
+  Future<Result<LibraryEntry>> markMissing(String id) =>
       _transition(id, (entry) {
         if (entry.status == LibraryFileStatus.trashed) {
           return const Result.err(
-            StorageFailure('O item já está na lixeira.'),
+            StorageFailure('Itens na lixeira não são verificados.'),
           );
+        }
+        return Result.ok(entry.copyWith(status: LibraryFileStatus.missing));
+      });
+
+  @override
+  Future<Result<LibraryEntry>> markAvailable(String id) =>
+      _transition(id, (entry) {
+        if (entry.status == LibraryFileStatus.trashed) {
+          return const Result.err(
+            StorageFailure('Restaure o item antes de reativá-lo.'),
+          );
+        }
+        return Result.ok(entry.copyWith(status: LibraryFileStatus.available));
+      });
+
+  @override
+  Future<Result<LibraryEntry>> moveToTrash(String id, DateTime now) =>
+      _transition(id, (entry) {
+        if (entry.status == LibraryFileStatus.trashed) {
+          return const Result.err(StorageFailure('O item já está na lixeira.'));
         }
         return Result.ok(
           entry.copyWith(status: LibraryFileStatus.trashed, trashedAt: now),
@@ -111,8 +213,7 @@ final class DriftLibraryRepository implements LibraryRepository {
       _transition(id, (entry) {
         if (entry.status != LibraryFileStatus.trashed) {
           return const Result.err(
-            StorageFailure('O item não está na lixeira.'),
-          );
+              StorageFailure('O item não está na lixeira.'));
         }
         return Result.ok(
           entry.copyWith(
@@ -128,17 +229,42 @@ final class DriftLibraryRepository implements LibraryRepository {
       final cutoff = now.subtract(
         const Duration(days: LibraryEntry.trashRetentionDays),
       );
-      final removed = await (_db.delete(_db.libraryEntryRows)
+      final expired = await (_db.select(_db.libraryEntryRows)
             ..where(
               (t) =>
                   t.status.equals(LibraryFileStatus.trashed.name) &
                   t.trashedAt.isSmallerOrEqualValue(cutoff),
             ))
-          .go();
-      return Result.ok(removed);
+          .get();
+      await _db.transaction(() async {
+        for (final row in expired) {
+          await (_db.delete(_db.libraryEntryRows)
+                ..where((t) => t.id.equals(row.id)))
+              .go();
+          await _index.remove(row.id);
+        }
+      });
+      return Result.ok(expired.length);
     } on Exception {
       return const Result.err(StorageFailure('Falha ao esvaziar a lixeira.'));
     }
+  }
+
+  OrderingTerm _orderingFor(
+    $LibraryEntryRowsTable t,
+    LibrarySort sort,
+    bool descending,
+  ) {
+    final mode = descending ? OrderingMode.desc : OrderingMode.asc;
+    return switch (sort) {
+      LibrarySort.downloadedAt =>
+        OrderingTerm(expression: t.downloadedAt, mode: mode),
+      LibrarySort.name => OrderingTerm(expression: t.title, mode: mode),
+      LibrarySort.size => OrderingTerm(expression: t.sizeBytes, mode: mode),
+      LibrarySort.duration =>
+        OrderingTerm(expression: t.durationMs, mode: mode),
+      LibrarySort.platform => OrderingTerm(expression: t.platform, mode: mode),
+    };
   }
 
   Future<Result<LibraryEntry>> _transition(
@@ -169,6 +295,7 @@ final class DriftLibraryRepository implements LibraryRepository {
         kind: Value(entry.kind.name),
         sizeBytes: Value(entry.size.bytes),
         durationMs: Value(entry.duration?.inMilliseconds),
+        author: Value(entry.author),
         platform: Value(entry.platform),
         licenseSpdxId: Value(entry.license?.spdxId),
         favorite: Value(entry.favorite),
@@ -187,6 +314,7 @@ final class DriftLibraryRepository implements LibraryRepository {
         duration: row.durationMs == null
             ? null
             : Duration(milliseconds: row.durationMs!),
+        author: row.author,
         platform: row.platform,
         license: row.licenseSpdxId == null
             ? null

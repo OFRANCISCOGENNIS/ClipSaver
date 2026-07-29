@@ -1,13 +1,16 @@
 /// A media conversion job (section 11): one source file from the user's
-/// library, one target spec, executed by FFmpeg in an isolate/process.
+/// library, one target spec, executed by FFmpeg off the UI thread.
 ///
 /// Responsibility: validate the conversion request at construction and
 /// track its lifecycle with the same refuse-illegal-transitions approach
 /// as [DownloadTask].
 library;
 
+import 'package:path/path.dart' as p;
+
 import '../../../core/error/failures.dart';
 import '../../../core/error/result.dart';
+import 'conversion_request.dart';
 
 /// Lifecycle states of a conversion job.
 enum ConversionState {
@@ -73,10 +76,10 @@ final class ConversionJob {
     required this.id,
     required this.libraryEntryId,
     required this.sourcePath,
-    required this.target,
+    required this.request,
+    this.sourceDuration,
     this.state = ConversionState.queued,
     this.progress = 0,
-    this.keepOriginal = true,
     this.failureReason,
   }) {
     if (id.trim().isEmpty) throw ArgumentError('id must not be empty');
@@ -101,29 +104,40 @@ final class ConversionJob {
   /// Absolute path of the source file.
   final String sourcePath;
 
-  /// Requested output container.
-  final ConversionTarget target;
+  /// The full conversion spec — codecs, quality, trim, target container.
+  final ConversionRequest request;
+
+  /// Source media duration, needed to turn FFmpeg's processed-time output
+  /// into a percentage. Null makes progress indeterminate.
+  final Duration? sourceDuration;
 
   /// Current lifecycle state.
   final ConversionState state;
 
-  /// Fraction of media time processed, 0..1 (FFmpeg reports time, not bytes).
+  /// Fraction of media time processed, 0..1 (FFmpeg reports time, not
+  /// bytes).
   final double progress;
-
-  /// Section 11: original preserved by default; replacement is opt-in
-  /// and confirmed in the UI.
-  final bool keepOriginal;
 
   /// Populated when [state] is [ConversionState.failed].
   final String? failureReason;
 
-  /// Output path: source path with the target extension.
+  /// Requested output container.
+  ConversionTarget get target => request.target;
+
+  /// Section 11: original preserved by default; replacement is opt-in.
+  bool get keepOriginal => request.keepOriginal;
+
+  /// Output path: the source path with the target extension.
+  ///
+  /// When the target extension matches the source, a suffix is added so a
+  /// conversion never overwrites its own input mid-run.
   String get outputPath {
-    final dot = sourcePath.lastIndexOf('.');
-    final base = dot > sourcePath.lastIndexOf('/')
-        ? sourcePath.substring(0, dot)
-        : sourcePath;
-    return '$base.${target.extension}';
+    final directory = p.dirname(sourcePath);
+    final base = p.basenameWithoutExtension(sourcePath);
+    final sameContainer =
+        p.extension(sourcePath).toLowerCase() == '.${target.extension}';
+    final name = sameContainer ? '$base (convertido)' : base;
+    return p.join(directory, '$name.${target.extension}');
   }
 
   static const Map<ConversionState, Set<ConversionState>> _transitions = {
@@ -196,10 +210,10 @@ final class ConversionJob {
         id: id,
         libraryEntryId: libraryEntryId,
         sourcePath: sourcePath,
-        target: target,
+        request: request,
+        sourceDuration: sourceDuration,
         state: state ?? this.state,
         progress: progress ?? this.progress,
-        keepOriginal: keepOriginal,
         failureReason: failureReason,
       );
 

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vidora/core/error/failures.dart';
 import 'package:vidora/features/converter/domain/conversion_job.dart';
+import 'package:vidora/features/converter/domain/conversion_request.dart';
 
 void main() {
   ConversionJob job({
@@ -11,7 +12,7 @@ void main() {
         id: 'c1',
         libraryEntryId: 'l1',
         sourcePath: '/library/aula.mp4',
-        target: target,
+        request: ConversionRequest(target: target),
         state: state,
       );
 
@@ -76,7 +77,7 @@ void main() {
         id: 'c2',
         libraryEntryId: 'l1',
         sourcePath: '/library/aula',
-        target: ConversionTarget.mp3,
+        request: const ConversionRequest(target: ConversionTarget.mp3),
       );
       expect(noExt.outputPath, '/library/aula.mp3');
     });
@@ -96,7 +97,7 @@ void main() {
           id: 'c3',
           libraryEntryId: 'l1',
           sourcePath: '/x.mp4',
-          target: ConversionTarget.mp3,
+          request: const ConversionRequest(target: ConversionTarget.mp3),
           progress: 2,
         ),
         throwsArgumentError,
@@ -106,7 +107,7 @@ void main() {
           id: '',
           libraryEntryId: 'l1',
           sourcePath: '/x.mp4',
-          target: ConversionTarget.mp3,
+          request: const ConversionRequest(target: ConversionTarget.mp3),
         ),
         throwsArgumentError,
       );

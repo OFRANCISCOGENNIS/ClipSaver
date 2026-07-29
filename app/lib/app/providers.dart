@@ -15,6 +15,9 @@ import '../core/storage/database.dart';
 import '../core/storage/download_file_system.dart';
 import '../features/analyze/domain/analyze_repository.dart';
 import '../features/analyze/infrastructure/analyze_repository_impl.dart';
+import '../features/converter/application/conversion_manager.dart';
+import '../features/converter/domain/media_converter.dart';
+import '../features/converter/infrastructure/in_memory_converter_repository.dart';
 import '../features/downloads/application/download_manager.dart';
 import '../features/downloads/domain/download_repository.dart';
 import '../features/downloads/infrastructure/dio_download_transport.dart';
@@ -23,6 +26,8 @@ import '../features/downloads/infrastructure/download_transport.dart';
 import '../features/downloads/infrastructure/drift_download_repository.dart';
 import '../features/library/domain/library_repository.dart';
 import '../features/library/infrastructure/drift_library_repository.dart';
+import '../features/search/domain/search_repository.dart';
+import '../features/search/infrastructure/drift_search_repository.dart';
 
 /// Base URL of the Vidora API.
 ///
@@ -116,6 +121,44 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
     repository: ref.watch(downloadRepositoryProvider),
     engine: ref.watch(downloadEngineProvider),
     maxConcurrent: ref.watch(maxConcurrentDownloadsProvider),
+  );
+  ref.onDispose(manager.dispose);
+  return manager;
+});
+
+/// Library search over the FTS5 index.
+final searchRepositoryProvider = Provider<SearchRepository>(
+  (ref) => DriftSearchRepository(
+    db: ref.watch(databaseProvider),
+    library: ref.watch(libraryRepositoryProvider),
+  ),
+);
+
+/// Session-scoped conversion queue (section 11: independent of downloads).
+final converterRepositoryProvider =
+    Provider<InMemoryConverterRepository>((ref) {
+  final repository = InMemoryConverterRepository();
+  ref.onDispose(() => repository.dispose());
+  return repository;
+});
+
+/// FFmpeg execution backend.
+///
+/// Overridden at bootstrap with the platform converter. There is no
+/// default: `ffmpeg_kit_flutter` was retired upstream, so the replacement
+/// is a deliberate choice rather than something to fall into.
+final mediaConverterProvider = Provider<MediaConverter>(
+  (ref) => throw UnimplementedError(
+    'mediaConverterProvider must be overridden with a MediaConverter '
+    'implementation for this platform.',
+  ),
+);
+
+/// The conversion scheduler.
+final conversionManagerProvider = Provider<ConversionManager>((ref) {
+  final manager = ConversionManager(
+    repository: ref.watch(converterRepositoryProvider),
+    converter: ref.watch(mediaConverterProvider),
   );
   ref.onDispose(manager.dispose);
   return manager;

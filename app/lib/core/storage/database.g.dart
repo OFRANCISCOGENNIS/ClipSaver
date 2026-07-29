@@ -1040,6 +1040,11 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
   late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
       'duration_ms', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+      'author', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _platformMeta =
       const VerificationMeta('platform');
   @override
@@ -1095,6 +1100,7 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
         kind,
         sizeBytes,
         durationMs,
+        author,
         platform,
         licenseSpdxId,
         favorite,
@@ -1147,6 +1153,10 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
           _durationMsMeta,
           durationMs.isAcceptableOrUnknown(
               data['duration_ms']!, _durationMsMeta));
+    }
+    if (data.containsKey('author')) {
+      context.handle(_authorMeta,
+          author.isAcceptableOrUnknown(data['author']!, _authorMeta));
     }
     if (data.containsKey('platform')) {
       context.handle(_platformMeta,
@@ -1205,6 +1215,8 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
           .read(DriftSqlType.int, data['${effectivePrefix}size_bytes'])!,
       durationMs: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}duration_ms']),
+      author: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}author']),
       platform: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}platform']),
       licenseSpdxId: attachedDatabase.typeMapping
@@ -1247,6 +1259,9 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
   /// Media duration in milliseconds, when known.
   final int? durationMs;
 
+  /// Author/channel from the origin metadata. Searchable (section 10).
+  final String? author;
+
   /// Origin platform slug for the badge.
   final String? platform;
 
@@ -1274,6 +1289,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       required this.kind,
       required this.sizeBytes,
       this.durationMs,
+      this.author,
       this.platform,
       this.licenseSpdxId,
       required this.favorite,
@@ -1291,6 +1307,9 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
     map['size_bytes'] = Variable<int>(sizeBytes);
     if (!nullToAbsent || durationMs != null) {
       map['duration_ms'] = Variable<int>(durationMs);
+    }
+    if (!nullToAbsent || author != null) {
+      map['author'] = Variable<String>(author);
     }
     if (!nullToAbsent || platform != null) {
       map['platform'] = Variable<String>(platform);
@@ -1318,6 +1337,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       durationMs: durationMs == null && nullToAbsent
           ? const Value.absent()
           : Value(durationMs),
+      author:
+          author == null && nullToAbsent ? const Value.absent() : Value(author),
       platform: platform == null && nullToAbsent
           ? const Value.absent()
           : Value(platform),
@@ -1344,6 +1365,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       kind: serializer.fromJson<String>(json['kind']),
       sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
       durationMs: serializer.fromJson<int?>(json['durationMs']),
+      author: serializer.fromJson<String?>(json['author']),
       platform: serializer.fromJson<String?>(json['platform']),
       licenseSpdxId: serializer.fromJson<String?>(json['licenseSpdxId']),
       favorite: serializer.fromJson<bool>(json['favorite']),
@@ -1363,6 +1385,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       'kind': serializer.toJson<String>(kind),
       'sizeBytes': serializer.toJson<int>(sizeBytes),
       'durationMs': serializer.toJson<int?>(durationMs),
+      'author': serializer.toJson<String?>(author),
       'platform': serializer.toJson<String?>(platform),
       'licenseSpdxId': serializer.toJson<String?>(licenseSpdxId),
       'favorite': serializer.toJson<bool>(favorite),
@@ -1380,6 +1403,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           String? kind,
           int? sizeBytes,
           Value<int?> durationMs = const Value.absent(),
+          Value<String?> author = const Value.absent(),
           Value<String?> platform = const Value.absent(),
           Value<String?> licenseSpdxId = const Value.absent(),
           bool? favorite,
@@ -1394,6 +1418,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
         kind: kind ?? this.kind,
         sizeBytes: sizeBytes ?? this.sizeBytes,
         durationMs: durationMs.present ? durationMs.value : this.durationMs,
+        author: author.present ? author.value : this.author,
         platform: platform.present ? platform.value : this.platform,
         licenseSpdxId:
             licenseSpdxId.present ? licenseSpdxId.value : this.licenseSpdxId,
@@ -1412,6 +1437,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
       durationMs:
           data.durationMs.present ? data.durationMs.value : this.durationMs,
+      author: data.author.present ? data.author.value : this.author,
       platform: data.platform.present ? data.platform.value : this.platform,
       licenseSpdxId: data.licenseSpdxId.present
           ? data.licenseSpdxId.value
@@ -1435,6 +1461,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           ..write('kind: $kind, ')
           ..write('sizeBytes: $sizeBytes, ')
           ..write('durationMs: $durationMs, ')
+          ..write('author: $author, ')
           ..write('platform: $platform, ')
           ..write('licenseSpdxId: $licenseSpdxId, ')
           ..write('favorite: $favorite, ')
@@ -1454,6 +1481,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       kind,
       sizeBytes,
       durationMs,
+      author,
       platform,
       licenseSpdxId,
       favorite,
@@ -1471,6 +1499,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           other.kind == this.kind &&
           other.sizeBytes == this.sizeBytes &&
           other.durationMs == this.durationMs &&
+          other.author == this.author &&
           other.platform == this.platform &&
           other.licenseSpdxId == this.licenseSpdxId &&
           other.favorite == this.favorite &&
@@ -1487,6 +1516,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
   final Value<String> kind;
   final Value<int> sizeBytes;
   final Value<int?> durationMs;
+  final Value<String?> author;
   final Value<String?> platform;
   final Value<String?> licenseSpdxId;
   final Value<bool> favorite;
@@ -1502,6 +1532,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     this.kind = const Value.absent(),
     this.sizeBytes = const Value.absent(),
     this.durationMs = const Value.absent(),
+    this.author = const Value.absent(),
     this.platform = const Value.absent(),
     this.licenseSpdxId = const Value.absent(),
     this.favorite = const Value.absent(),
@@ -1518,6 +1549,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     required String kind,
     required int sizeBytes,
     this.durationMs = const Value.absent(),
+    this.author = const Value.absent(),
     this.platform = const Value.absent(),
     this.licenseSpdxId = const Value.absent(),
     this.favorite = const Value.absent(),
@@ -1540,6 +1572,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     Expression<String>? kind,
     Expression<int>? sizeBytes,
     Expression<int>? durationMs,
+    Expression<String>? author,
     Expression<String>? platform,
     Expression<String>? licenseSpdxId,
     Expression<bool>? favorite,
@@ -1556,6 +1589,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
       if (kind != null) 'kind': kind,
       if (sizeBytes != null) 'size_bytes': sizeBytes,
       if (durationMs != null) 'duration_ms': durationMs,
+      if (author != null) 'author': author,
       if (platform != null) 'platform': platform,
       if (licenseSpdxId != null) 'license_spdx_id': licenseSpdxId,
       if (favorite != null) 'favorite': favorite,
@@ -1574,6 +1608,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
       Value<String>? kind,
       Value<int>? sizeBytes,
       Value<int?>? durationMs,
+      Value<String?>? author,
       Value<String?>? platform,
       Value<String?>? licenseSpdxId,
       Value<bool>? favorite,
@@ -1589,6 +1624,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
       kind: kind ?? this.kind,
       sizeBytes: sizeBytes ?? this.sizeBytes,
       durationMs: durationMs ?? this.durationMs,
+      author: author ?? this.author,
       platform: platform ?? this.platform,
       licenseSpdxId: licenseSpdxId ?? this.licenseSpdxId,
       favorite: favorite ?? this.favorite,
@@ -1620,6 +1656,9 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     }
     if (durationMs.present) {
       map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
     }
     if (platform.present) {
       map['platform'] = Variable<String>(platform.value);
@@ -1657,6 +1696,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
           ..write('kind: $kind, ')
           ..write('sizeBytes: $sizeBytes, ')
           ..write('durationMs: $durationMs, ')
+          ..write('author: $author, ')
           ..write('platform: $platform, ')
           ..write('licenseSpdxId: $licenseSpdxId, ')
           ..write('favorite: $favorite, ')
@@ -2743,6 +2783,7 @@ typedef $$LibraryEntryRowsTableCreateCompanionBuilder
   required String kind,
   required int sizeBytes,
   Value<int?> durationMs,
+  Value<String?> author,
   Value<String?> platform,
   Value<String?> licenseSpdxId,
   Value<bool> favorite,
@@ -2760,6 +2801,7 @@ typedef $$LibraryEntryRowsTableUpdateCompanionBuilder
   Value<String> kind,
   Value<int> sizeBytes,
   Value<int?> durationMs,
+  Value<String?> author,
   Value<String?> platform,
   Value<String?> licenseSpdxId,
   Value<bool> favorite,
@@ -2796,6 +2838,9 @@ class $$LibraryEntryRowsTableFilterComposer
 
   ColumnFilters<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get author => $composableBuilder(
+      column: $table.author, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get platform => $composableBuilder(
       column: $table.platform, builder: (column) => ColumnFilters(column));
@@ -2845,6 +2890,9 @@ class $$LibraryEntryRowsTableOrderingComposer
 
   ColumnOrderings<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get author => $composableBuilder(
+      column: $table.author, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get platform => $composableBuilder(
       column: $table.platform, builder: (column) => ColumnOrderings(column));
@@ -2896,6 +2944,9 @@ class $$LibraryEntryRowsTableAnnotationComposer
 
   GeneratedColumn<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => column);
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
 
   GeneratedColumn<String> get platform =>
       $composableBuilder(column: $table.platform, builder: (column) => column);
@@ -2952,6 +3003,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             Value<String> kind = const Value.absent(),
             Value<int> sizeBytes = const Value.absent(),
             Value<int?> durationMs = const Value.absent(),
+            Value<String?> author = const Value.absent(),
             Value<String?> platform = const Value.absent(),
             Value<String?> licenseSpdxId = const Value.absent(),
             Value<bool> favorite = const Value.absent(),
@@ -2968,6 +3020,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             kind: kind,
             sizeBytes: sizeBytes,
             durationMs: durationMs,
+            author: author,
             platform: platform,
             licenseSpdxId: licenseSpdxId,
             favorite: favorite,
@@ -2984,6 +3037,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             required String kind,
             required int sizeBytes,
             Value<int?> durationMs = const Value.absent(),
+            Value<String?> author = const Value.absent(),
             Value<String?> platform = const Value.absent(),
             Value<String?> licenseSpdxId = const Value.absent(),
             Value<bool> favorite = const Value.absent(),
@@ -3000,6 +3054,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             kind: kind,
             sizeBytes: sizeBytes,
             durationMs: durationMs,
+            author: author,
             platform: platform,
             licenseSpdxId: licenseSpdxId,
             favorite: favorite,

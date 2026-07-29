@@ -8,7 +8,10 @@ library;
 import 'package:go_router/go_router.dart';
 
 import '../features/analyze/presentation/analyze_view.dart';
+import '../features/converter/presentation/converter_view.dart';
 import '../features/downloads/presentation/downloads_view.dart';
+import '../features/library/presentation/library_view.dart';
+import '../features/search/presentation/search_view.dart';
 import 'shell.dart';
 
 /// Route paths, referenced instead of raw strings.
@@ -18,6 +21,15 @@ abstract final class Routes {
 
   /// Download queue.
   static const String downloads = '/downloads';
+
+  /// Library of finished downloads.
+  static const String library = '/library';
+
+  /// Global search over the library.
+  static const String search = '/search';
+
+  /// Conversion queue.
+  static const String converter = '/converter';
 }
 
 /// Query parameter carrying a shared URL into [Routes.analyze],
@@ -47,6 +59,30 @@ GoRouter buildRouter({String initialLocation = Routes.analyze}) => GoRouter(
                 GoRoute(
                   path: Routes.downloads,
                   builder: (context, state) => const DownloadsView(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.library,
+                  builder: (context, state) => const LibraryView(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.search,
+                  builder: (context, state) => const SearchView(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.converter,
+                  builder: (context, state) => const ConverterView(),
                 ),
               ],
             ),

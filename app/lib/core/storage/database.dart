@@ -9,6 +9,8 @@ library;
 
 import 'package:drift/drift.dart';
 
+import 'search_index.dart';
+
 part 'database.g.dart';
 
 /// Download queue persistence (feature `downloads`).
@@ -97,6 +99,9 @@ class LibraryEntryRows extends Table {
   /// Media duration in milliseconds, when known.
   IntColumn get durationMs => integer().nullable()();
 
+  /// Author/channel from the origin metadata. Searchable (section 10).
+  TextColumn get author => text().nullable()();
+
   /// Origin platform slug for the badge.
   TextColumn get platform => text().nullable()();
 
@@ -174,10 +179,25 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
+        onCreate: (m) async {
+          await m.createAll();
+          await customStatement(kSearchTableDdl);
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // v2 adds the searchable author column and the FTS5 index.
+            await m.addColumn(libraryEntryRows, libraryEntryRows.author);
+            await customStatement(kSearchTableDdl);
+          }
+        },
+        beforeOpen: (details) async {
+          // Foreign keys are off by default in SQLite and must be enabled
+          // per connection, not once per database.
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
       );
 }

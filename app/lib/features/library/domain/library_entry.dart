@@ -32,6 +32,7 @@ final class LibraryEntry {
     required this.size,
     required this.downloadedAt,
     this.duration,
+    this.author,
     this.platform,
     this.license,
     this.favorite = false,
@@ -69,6 +70,9 @@ final class LibraryEntry {
 
   /// Media duration, when known.
   final Duration? duration;
+
+  /// Author/channel from the origin metadata. Searchable (section 10).
+  final String? author;
 
   /// Origin platform slug for the platform badge.
   final String? platform;
@@ -118,6 +122,7 @@ final class LibraryEntry {
         size: size,
         downloadedAt: downloadedAt,
         duration: duration,
+        author: author,
         platform: platform,
         license: license,
         favorite: favorite ?? this.favorite,
