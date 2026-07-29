@@ -33,35 +33,25 @@ enum AppLanguage {
 /// Theme choice (section 6.3).
 enum AppThemeMode {
   /// Always light.
-  light('Claro'),
+  light,
 
   /// Always dark.
-  dark('Escuro'),
+  dark,
 
   /// Follow the operating system.
-  system('Automático');
-
-  const AppThemeMode(this.label);
-
-  /// Name shown in the picker.
-  final String label;
+  system,
 }
 
 /// How notifications are delivered (section 16).
 enum NotificationStyle {
   /// Sound and vibration.
-  sound('Som'),
+  sound,
 
   /// Vibration only.
-  vibrate('Vibrar'),
+  vibrate,
 
   /// Neither.
-  silent('Silencioso');
-
-  const NotificationStyle(this.label);
-
-  /// Name shown in the picker.
-  final String label;
+  silent,
 }
 
 /// All user preferences.

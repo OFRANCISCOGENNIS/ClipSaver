@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../l10n/l10n.dart';
 import '../domain/download_state.dart';
 import 'downloads_state.dart';
 import 'downloads_view_model.dart';
@@ -38,26 +39,27 @@ class _DownloadsViewState extends ConsumerState<DownloadsView> {
   Widget build(BuildContext context) {
     final state = ref.watch(downloadsViewModelProvider);
     final viewModel = ref.read(downloadsViewModelProvider.notifier);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Downloads'),
+        title: Text(l10n.navDownloads),
         actions: [
           if (state.hasPausableWork)
             IconButton(
-              tooltip: 'Pausar tudo',
+              tooltip: l10n.downloadsPauseAll,
               icon: const Icon(Icons.pause),
               onPressed: viewModel.pauseAll,
             ),
           if (state.hasResumableWork)
             IconButton(
-              tooltip: 'Retomar tudo',
+              tooltip: l10n.downloadsResumeAll,
               icon: const Icon(Icons.play_arrow),
               onPressed: viewModel.resumeAll,
             ),
           if (state.hasFinishedWork)
             IconButton(
-              tooltip: 'Limpar concluídos',
+              tooltip: l10n.downloadsClearFinished,
               icon: const Icon(Icons.cleaning_services_outlined),
               onPressed: viewModel.clearFinished,
             ),
@@ -99,18 +101,16 @@ class _DownloadsViewState extends ConsumerState<DownloadsView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancelar download?'),
-        content: Text(
-          'O progresso de “${item.task.title}” será descartado.',
-        ),
+        title: Text(context.l10n.downloadsCancelTitle),
+        content: Text(context.l10n.downloadsCancelBody(item.task.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Manter'),
+            child: Text(context.l10n.downloadsCancelKeep),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Cancelar download'),
+            child: Text(context.l10n.downloadsCancelConfirm),
           ),
         ],
       ),
@@ -149,6 +149,7 @@ class DownloadTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final task = item.task;
     final total = task.totalBytes;
 
@@ -187,9 +188,13 @@ class DownloadTile extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (task.state == DownloadState.downloading) ...[
-                    Text(item.rate?.speedLabel ?? '—'),
+                    Text(item.rate?.speedLabel ?? l10n.valueUnavailable),
                     const SizedBox(width: VidoraSpacing.md),
-                    Text('ETA ${item.rate?.etaLabel ?? '—'}'),
+                    Text(
+                      l10n.downloadsEta(
+                        item.rate?.etaLabel ?? l10n.valueUnavailable,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -210,23 +215,23 @@ class DownloadTile extends StatelessWidget {
                   TextButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Tentar de novo'),
+                    label: Text(l10n.actionRetryShort),
                   ),
                 if (item.canResume)
                   IconButton(
-                    tooltip: 'Continuar',
+                    tooltip: l10n.actionResume,
                     icon: const Icon(Icons.play_arrow),
                     onPressed: onResume,
                   ),
                 if (item.canPause)
                   IconButton(
-                    tooltip: 'Pausar',
+                    tooltip: l10n.actionPause,
                     icon: const Icon(Icons.pause),
                     onPressed: onPause,
                   ),
                 if (item.canCancel)
                   IconButton(
-                    tooltip: 'Cancelar',
+                    tooltip: l10n.actionCancel,
                     icon: const Icon(Icons.close),
                     onPressed: onCancel,
                   ),
@@ -246,6 +251,7 @@ class _Progress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final task = item.task;
     // Without a Content-Length there is no honest percentage, so the bar
     // goes indeterminate rather than inventing one.
@@ -254,7 +260,7 @@ class _Progress extends StatelessWidget {
     final percent = (task.progress * 100).round();
 
     return Semantics(
-      label: '${describeDownloadState(task.state)}, $percent por cento',
+      label: l10n.downloadsProgressSemantics(task.state.label(l10n), percent),
       value: '$percent%',
       child: Row(
         children: [
@@ -270,7 +276,7 @@ class _Progress extends StatelessWidget {
           SizedBox(
             width: 44,
             child: Text(
-              indeterminate ? '—' : '$percent%',
+              indeterminate ? l10n.valueUnavailable : '$percent%',
               textAlign: TextAlign.right,
               style: monoStyle(context),
             ),
@@ -305,7 +311,7 @@ class _StateChip extends StatelessWidget {
         borderRadius: const BorderRadius.all(VidoraRadius.pill),
       ),
       child: Text(
-        describeDownloadState(state),
+        state.label(context.l10n),
         style: Theme.of(context)
             .textTheme
             .bodySmall
@@ -333,10 +339,13 @@ class _EmptyQueue extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: VidoraSpacing.lg),
-            Text('Nenhum download na fila', style: theme.textTheme.titleLarge),
+            Text(
+              context.l10n.downloadsEmptyTitle,
+              style: theme.textTheme.titleLarge,
+            ),
             const SizedBox(height: VidoraSpacing.sm),
             Text(
-              'Analise um link autorizado para começar.',
+              context.l10n.downloadsEmptyBody,
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),

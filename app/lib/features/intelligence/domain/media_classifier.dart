@@ -16,24 +16,19 @@ import '../../../core/domain/value_objects/media_format.dart';
 /// Content categories offered by auto-organization.
 enum ContentCategory {
   /// Songs and albums.
-  music('Música'),
+  music,
 
   /// Episodic spoken audio.
-  podcast('Podcast'),
+  podcast,
 
   /// Lectures and classes.
-  lecture('Aula'),
+  lecture,
 
   /// How-to content.
-  tutorial('Tutorial'),
+  tutorial,
 
   /// Nothing matched confidently.
-  unknown('Sem categoria');
-
-  const ContentCategory(this.label);
-
-  /// User-facing name.
-  final String label;
+  unknown,
 }
 
 /// Everything the classifier is allowed to look at.

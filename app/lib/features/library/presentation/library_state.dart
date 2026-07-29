@@ -11,21 +11,16 @@ part 'library_state.freezed.dart';
 /// The four library tabs (section 9).
 enum LibraryTab {
   /// Video entries.
-  videos('Vídeos'),
+  videos,
 
   /// Audio entries.
-  audios('Áudios'),
+  audios,
 
   /// Favorited entries of any kind.
-  favorites('Favoritos'),
+  favorites,
 
   /// Everything, newest first.
-  recents('Recentes');
-
-  const LibraryTab(this.label);
-
-  /// Tab title.
-  final String label;
+  recents,
 }
 
 /// Grid or list presentation; the choice is persisted (section 9).

@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../../l10n/l10n.dart';
 import '../domain/app_settings.dart';
 import '../domain/settings_repository.dart';
 
@@ -35,6 +36,11 @@ final class SettingsEntry {
   final String title;
 
   /// Extra words that should also find it.
+  ///
+  /// Deliberately multilingual and never displayed: someone running the
+  /// app in Portuguese still types "dark", and someone in English still
+  /// remembers "escuro". Splitting these per language would make the
+  /// search worse in every language.
   final List<String> keywords;
 
   /// Whether [query] matches this entry.
@@ -93,100 +99,177 @@ final class SettingsViewModel extends AsyncNotifier<AppSettings> {
       apply((current) => current.copyWith(onboardingCompleted: true));
 
   /// The full searchable index of settings (section 16).
-  static const List<SettingsEntry> searchIndex = [
-    SettingsEntry(
-      section: 'Geral',
-      title: 'Idioma',
-      keywords: ['language', 'português', 'english', 'español'],
-    ),
-    SettingsEntry(
-      section: 'Geral',
-      title: 'Tema',
-      keywords: ['claro', 'escuro', 'automático', 'dark', 'light'],
-    ),
-    SettingsEntry(
-      section: 'Geral',
-      title: 'Detectar link na área de transferência',
-      keywords: ['clipboard', 'colar'],
-    ),
-    SettingsEntry(
-      section: 'Downloads',
-      title: 'Downloads simultâneos',
-      keywords: ['paralelo', 'fila', 'concorrência'],
-    ),
-    SettingsEntry(
-      section: 'Downloads',
-      title: 'Limite de velocidade',
-      keywords: ['banda', 'kb/s', 'throttle'],
-    ),
-    SettingsEntry(
-      section: 'Downloads',
-      title: 'Somente Wi-Fi',
-      keywords: ['dados móveis', 'celular', '4g', '5g'],
-    ),
-    SettingsEntry(
-      section: 'Downloads',
-      title: 'Retomar ao reconectar',
-      keywords: ['resume', 'reconexão'],
-    ),
-    SettingsEntry(
-      section: 'Notificações',
-      title: 'Avisar ao concluir',
-      keywords: ['notificação', 'pronto'],
-    ),
-    SettingsEntry(
-      section: 'Notificações',
-      title: 'Avisar em caso de erro',
-      keywords: ['falha', 'notificação'],
-    ),
-    SettingsEntry(
-      section: 'Notificações',
-      title: 'Estilo das notificações',
-      keywords: ['som', 'vibrar', 'silencioso'],
-    ),
-    SettingsEntry(
-      section: 'Notificações',
-      title: 'Resumo diário',
-      keywords: ['digest'],
-    ),
-    SettingsEntry(
-      section: 'Bateria e dados',
-      title: 'Modo economia',
-      keywords: ['bateria', 'animações', 'economizar'],
-    ),
-    SettingsEntry(
-      section: 'Bateria e dados',
-      title: 'Pausar com bateria baixa',
-      keywords: ['15%', 'bateria'],
-    ),
-    SettingsEntry(
-      section: 'Armazenamento',
-      title: 'Cache de miniaturas',
-      keywords: ['thumbnail', 'limpar', 'espaço'],
-    ),
-    SettingsEntry(
-      section: 'Armazenamento',
-      title: 'Retenção da lixeira',
-      keywords: ['dias', 'excluir', 'trash'],
-    ),
-    SettingsEntry(
-      section: 'Privacidade',
-      title: 'Enviar dados de uso',
-      keywords: ['analytics', 'telemetria', 'lgpd', 'gdpr'],
-    ),
-    SettingsEntry(
-      section: 'Privacidade',
-      title: 'Política de uso responsável',
-      keywords: ['conformidade', 'direitos autorais', 'licença'],
-    ),
-    SettingsEntry(
-      section: 'Sobre',
-      title: 'Versão e licenças',
-      keywords: ['changelog', 'open source', 'suporte'],
-    ),
-  ];
+  ///
+  /// Built against [l10n] rather than held as a `const`: the section and
+  /// title are exactly the strings the screen renders, so a query that
+  /// matches what the user can see always matches the index too.
+  static List<SettingsEntry> searchIndexFor(AppLocalizations l10n) => [
+        SettingsEntry(
+          section: l10n.settingsSectionGeneral,
+          title: l10n.settingsLanguage,
+          keywords: const [
+            'idioma',
+            'language',
+            'português',
+            'english',
+            'español',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionGeneral,
+          title: l10n.settingsTheme,
+          keywords: const [
+            'tema',
+            'theme',
+            'claro',
+            'escuro',
+            'automático',
+            'dark',
+            'light',
+            'oscuro',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionGeneral,
+          title: l10n.settingsClipboardDetection,
+          keywords: const [
+            'clipboard',
+            'colar',
+            'área de transferência',
+            'portapapeles',
+            'paste',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionDownloads,
+          title: l10n.settingsConcurrency,
+          keywords: const [
+            'paralelo',
+            'fila',
+            'concorrência',
+            'parallel',
+            'queue',
+            'simultáneas',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionDownloads,
+          title: l10n.settingsSpeedLimit,
+          keywords: const ['banda', 'kb/s', 'throttle', 'velocidad', 'speed'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionDownloads,
+          title: l10n.settingsWifiOnly,
+          keywords: const [
+            'dados móveis',
+            'celular',
+            '4g',
+            '5g',
+            'mobile data',
+            'datos',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionDownloads,
+          title: l10n.settingsResumeOnReconnect,
+          keywords: const ['resume', 'reconexão', 'retomar', 'reanudar'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionNotifications,
+          title: l10n.settingsNotifyOnComplete,
+          keywords: const ['notificação', 'pronto', 'notification', 'done'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionNotifications,
+          title: l10n.settingsNotifyOnError,
+          keywords: const ['falha', 'notificação', 'error', 'failure'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionNotifications,
+          title: l10n.settingsNotificationStyle,
+          keywords: const [
+            'som',
+            'vibrar',
+            'silencioso',
+            'sound',
+            'silent',
+            'sonido',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionNotifications,
+          title: l10n.settingsDailySummary,
+          keywords: const ['digest', 'resumo', 'resumen', 'summary'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionBattery,
+          title: l10n.settingsBatterySaver,
+          keywords: const [
+            'bateria',
+            'animações',
+            'economizar',
+            'battery',
+            'saver',
+            'ahorro',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionBattery,
+          title: l10n.settingsPauseOnLowBattery,
+          keywords: const ['15%', 'bateria', 'battery', 'batería'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionStorage,
+          title: l10n.settingsThumbnailCache,
+          keywords: const [
+            'thumbnail',
+            'limpar',
+            'espaço',
+            'miniatura',
+            'cache',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionStorage,
+          title: l10n.settingsTrashRetention,
+          keywords: const ['dias', 'excluir', 'trash', 'lixeira', 'papelera'],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionPrivacy,
+          title: l10n.settingsAnalytics,
+          keywords: const [
+            'analytics',
+            'telemetria',
+            'lgpd',
+            'gdpr',
+            'privacidade',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionPrivacy,
+          title: l10n.settingsPolicy,
+          keywords: const [
+            'conformidade',
+            'direitos autorais',
+            'licença',
+            'copyright',
+            'compliance',
+          ],
+        ),
+        SettingsEntry(
+          section: l10n.settingsSectionAbout,
+          title: l10n.settingsAbout,
+          keywords: const [
+            'changelog',
+            'open source',
+            'suporte',
+            'version',
+            'licenses',
+          ],
+        ),
+      ];
 
   /// Index entries matching [query].
-  static List<SettingsEntry> search(String query) =>
-      searchIndex.where((entry) => entry.matches(query)).toList();
+  static List<SettingsEntry> search(String query, AppLocalizations l10n) =>
+      searchIndexFor(l10n).where((entry) => entry.matches(query)).toList();
 }

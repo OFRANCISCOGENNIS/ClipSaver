@@ -17,6 +17,9 @@ import 'package:vidora/features/premium/domain/entitlements.dart';
 import 'package:vidora/features/settings/domain/app_settings.dart';
 import 'package:vidora/features/settings/infrastructure/drift_settings_repository.dart';
 import 'package:vidora/features/settings/presentation/settings_view_model.dart';
+import 'package:vidora/l10n/l10n.dart';
+
+import '../support/localized_app.dart';
 
 void main() {
   group('DriftSettingsRepository', () {
@@ -174,36 +177,69 @@ void main() {
     });
 
     group('internal search (section 16)', () {
+      late AppLocalizations l10n;
+
+      setUp(() async => l10n = await loadL10n());
+
       test('an empty query returns everything', () {
         expect(
-          SettingsViewModel.search('').length,
-          SettingsViewModel.searchIndex.length,
+          SettingsViewModel.search('', l10n).length,
+          SettingsViewModel.searchIndexFor(l10n).length,
         );
       });
 
       test('finds by label', () {
-        final results = SettingsViewModel.search('lixeira');
+        final results = SettingsViewModel.search('lixeira', l10n);
         expect(results, hasLength(1));
-        expect(results.single.section, 'Armazenamento');
+        expect(results.single.section, l10n.settingsSectionStorage);
       });
 
       test('finds by synonym the label does not contain', () {
-        expect(SettingsViewModel.search('lgpd').single.title,
-            'Enviar dados de uso');
-        expect(SettingsViewModel.search('clipboard').single.section, 'Geral');
-        expect(SettingsViewModel.search('4g').single.title, 'Somente Wi-Fi');
+        expect(
+          SettingsViewModel.search('lgpd', l10n).single.title,
+          l10n.settingsAnalytics,
+        );
+        expect(
+          SettingsViewModel.search('clipboard', l10n).single.section,
+          l10n.settingsSectionGeneral,
+        );
+        expect(
+          SettingsViewModel.search('4g', l10n).single.title,
+          l10n.settingsWifiOnly,
+        );
       });
 
       test('finds by section name', () {
-        expect(SettingsViewModel.search('Notificações'), hasLength(4));
+        expect(
+          SettingsViewModel.search(l10n.settingsSectionNotifications, l10n),
+          hasLength(4),
+        );
       });
 
       test('is case- and whitespace-insensitive', () {
-        expect(SettingsViewModel.search('  TEMA  '), isNotEmpty);
+        expect(SettingsViewModel.search('  TEMA  ', l10n), isNotEmpty);
       });
 
       test('returns nothing for an unrelated query', () {
-        expect(SettingsViewModel.search('zzzzz'), isEmpty);
+        expect(SettingsViewModel.search('zzzzz', l10n), isEmpty);
+      });
+
+      test('synonyms work regardless of the interface language', () async {
+        // Someone running the app in English still types "escuro" if that
+        // is the word they know; the index is deliberately multilingual.
+        for (final locale in AppLocalizations.supportedLocales) {
+          final translated = await loadL10n(locale);
+          expect(
+            SettingsViewModel.search('dark', translated),
+            isNotEmpty,
+            reason: '$locale',
+          );
+          expect(
+            SettingsViewModel.search('escuro', translated),
+            isNotEmpty,
+            reason: '$locale',
+          );
+        }
       });
     });
   });

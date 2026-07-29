@@ -11,6 +11,7 @@ import '../../../app/providers.dart';
 import '../../../core/domain/value_objects/media_url.dart';
 import '../../../core/error/failures.dart';
 import '../../../core/platform/clipboard_reader.dart';
+import '../../../l10n/l10n.dart';
 import '../application/analyze_url_use_case.dart';
 import '../domain/media_item.dart';
 import 'analyze_state.dart';
@@ -130,10 +131,16 @@ final class AnalyzeViewModel extends Notifier<AnalyzeUiState> {
 }
 
 /// Message for a [Failure], specific per type (section 7.2 item 6).
-String describeFailure(Failure failure) => switch (failure) {
+///
+/// Network, validation and server failures already carry a specific,
+/// user-safe sentence — from local validation or from the backend, which
+/// owns the wording of an eligibility refusal. Anything else gets the
+/// localized generic line rather than leaking an internal message.
+String describeFailure(Failure failure, AppLocalizations l10n) =>
+    switch (failure) {
       NetworkFailure() ||
       ValidationFailure() ||
       ServerFailure() =>
         failure.message,
-      _ => 'Não foi possível analisar este link.',
+      _ => l10n.analyzeGenericError,
     };

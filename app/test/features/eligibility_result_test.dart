@@ -22,7 +22,7 @@ void main() {
         restrictions: const ['atribuição obrigatória'],
       );
       expect(result.availableFormats, hasLength(1));
-      expect(result.source.badgeLabel, 'Licença aberta');
+      expect(result.source, AuthorizationSource.openLicense);
     });
 
     test('eligible without a named source is rejected', () {

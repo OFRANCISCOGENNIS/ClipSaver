@@ -100,16 +100,3 @@ final class DownloadsViewModel extends Notifier<DownloadsUiState> {
     await _manager.clearFinished();
   }
 }
-
-/// Human label for a queue state (section 8.1).
-String describeDownloadState(DownloadState state) => switch (state) {
-      DownloadState.queued => 'Na fila',
-      DownloadState.connecting => 'Conectando',
-      DownloadState.downloading => 'Baixando',
-      DownloadState.paused => 'Pausado',
-      DownloadState.completed => 'Concluindo',
-      DownloadState.verifying => 'Verificando integridade',
-      DownloadState.done => 'Concluído',
-      DownloadState.failed => 'Falhou',
-      DownloadState.canceled => 'Cancelado',
-    };

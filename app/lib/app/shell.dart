@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n.dart';
 import 'theme/tokens.dart';
 
 /// Width at which the bottom bar gives way to a navigation rail.
@@ -21,38 +22,40 @@ class VidoraShell extends StatelessWidget {
   /// The branch navigator provided by go_router.
   final StatefulNavigationShell navigationShell;
 
-  static const List<_Destination> _destinations = [
-    _Destination(
-      label: 'Analisar',
-      icon: Icons.search_outlined,
-      selectedIcon: Icons.search,
-    ),
-    _Destination(
-      label: 'Downloads',
-      icon: Icons.download_outlined,
-      selectedIcon: Icons.download,
-    ),
-    _Destination(
-      label: 'Biblioteca',
-      icon: Icons.video_library_outlined,
-      selectedIcon: Icons.video_library,
-    ),
-    _Destination(
-      label: 'Buscar',
-      icon: Icons.manage_search_outlined,
-      selectedIcon: Icons.manage_search,
-    ),
-    _Destination(
-      label: 'Converter',
-      icon: Icons.swap_horiz_outlined,
-      selectedIcon: Icons.swap_horiz,
-    ),
-    _Destination(
-      label: 'Ajustes',
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings,
-    ),
-  ];
+  // Built per frame rather than held in a const list: the labels are
+  // localized, so they have to be resolved against the current context.
+  static List<_Destination> _destinationsFor(AppLocalizations l10n) => [
+        _Destination(
+          label: l10n.navAnalyze,
+          icon: Icons.search_outlined,
+          selectedIcon: Icons.search,
+        ),
+        _Destination(
+          label: l10n.navDownloads,
+          icon: Icons.download_outlined,
+          selectedIcon: Icons.download,
+        ),
+        _Destination(
+          label: l10n.navLibrary,
+          icon: Icons.video_library_outlined,
+          selectedIcon: Icons.video_library,
+        ),
+        _Destination(
+          label: l10n.navSearch,
+          icon: Icons.manage_search_outlined,
+          selectedIcon: Icons.manage_search,
+        ),
+        _Destination(
+          label: l10n.navConverter,
+          icon: Icons.swap_horiz_outlined,
+          selectedIcon: Icons.swap_horiz,
+        ),
+        _Destination(
+          label: l10n.navSettings,
+          icon: Icons.settings_outlined,
+          selectedIcon: Icons.settings,
+        ),
+      ];
 
   void _go(int index) => navigationShell.goBranch(
         index,
@@ -61,6 +64,7 @@ class VidoraShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final destinations = _destinationsFor(context.l10n);
     final useRail = MediaQuery.sizeOf(context).width >= kRailBreakpoint;
     if (!useRail) {
       return Scaffold(
@@ -69,7 +73,7 @@ class VidoraShell extends StatelessWidget {
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _go,
           destinations: [
-            for (final destination in _destinations)
+            for (final destination in destinations)
               NavigationDestination(
                 icon: Icon(destination.icon),
                 selectedIcon: Icon(destination.selectedIcon),
@@ -87,7 +91,7 @@ class VidoraShell extends StatelessWidget {
             onDestinationSelected: _go,
             labelType: NavigationRailLabelType.all,
             destinations: [
-              for (final destination in _destinations)
+              for (final destination in destinations)
                 NavigationRailDestination(
                   icon: Icon(destination.icon),
                   selectedIcon: Icon(destination.selectedIcon),

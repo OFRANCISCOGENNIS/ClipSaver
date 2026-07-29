@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/shell.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../l10n/l10n.dart';
 import 'settings_view_model.dart';
 
 /// One onboarding page.
@@ -32,29 +33,30 @@ final class OnboardingPage {
 }
 
 /// The three compliance pages (section 2.3).
-const List<OnboardingPage> kOnboardingPages = [
-  OnboardingPage(
-    icon: Icons.verified_user_outlined,
-    title: 'Só o que é permitido',
-    body: 'O Vidora baixa mídia quando a plataforma de origem ou o titular '
-        'dos direitos autoriza. Todo link é verificado antes de qualquer '
-        'download começar.',
-  ),
-  OnboardingPage(
-    icon: Icons.workspace_premium_outlined,
-    title: 'Quatro formas de autorização',
-    body: 'Download oficial da plataforma, licença aberta (como Creative '
-        'Commons), conteúdo do seu próprio perfil, ou arquivo público de '
-        'acesso direto. Você vê qual delas valeu em cada item.',
-  ),
-  OnboardingPage(
-    icon: Icons.block_outlined,
-    title: 'O que o app não faz',
-    body: 'Nada de contornar DRM, paywall ou login de terceiros. Quando um '
-        'link não pode ser baixado, explicamos o motivo e, quando existe, '
-        'o caminho legítimo.',
-  ),
-];
+///
+/// Resolved against [l10n] rather than held as a `const` list: this text
+/// is the compliance promise itself, so it has to reach the user in their
+/// own language, not in the language the app happened to be written in.
+List<OnboardingPage> onboardingPages(AppLocalizations l10n) => [
+      OnboardingPage(
+        icon: Icons.verified_user_outlined,
+        title: l10n.onboardingTitle1,
+        body: l10n.onboardingBody1,
+      ),
+      OnboardingPage(
+        icon: Icons.workspace_premium_outlined,
+        title: l10n.onboardingTitle2,
+        body: l10n.onboardingBody2,
+      ),
+      OnboardingPage(
+        icon: Icons.block_outlined,
+        title: l10n.onboardingTitle3,
+        body: l10n.onboardingBody3,
+      ),
+    ];
+
+/// How many pages the onboarding has (section 2.3 caps it at three).
+const int kOnboardingPageCount = 3;
 
 /// First-run compliance onboarding.
 class OnboardingView extends ConsumerStatefulWidget {
@@ -78,7 +80,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
     super.dispose();
   }
 
-  bool get _isLastPage => _page == kOnboardingPages.length - 1;
+  bool get _isLastPage => _page == kOnboardingPageCount - 1;
 
   Future<void> _next() async {
     if (!_isLastPage) {
@@ -95,6 +97,8 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final pages = onboardingPages(l10n);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -102,10 +106,10 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: kOnboardingPages.length,
+                itemCount: pages.length,
                 onPageChanged: (index) => setState(() => _page = index),
                 itemBuilder: (context, index) {
-                  final page = kOnboardingPages[index];
+                  final page = pages[index];
                   return Padding(
                     padding: const EdgeInsets.all(VidoraSpacing.xxl),
                     child: Column(
@@ -137,7 +141,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (var i = 0; i < kOnboardingPages.length; i++)
+                for (var i = 0; i < pages.length; i++)
                   Container(
                     width: 8,
                     height: 8,
@@ -160,7 +164,9 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                 height: 56,
                 child: FilledButton(
                   onPressed: _next,
-                  child: Text(_isLastPage ? 'Entendi, começar' : 'Continuar'),
+                  child: Text(
+                    _isLastPage ? l10n.onboardingFinish : l10n.actionContinue,
+                  ),
                 ),
               ),
             ),

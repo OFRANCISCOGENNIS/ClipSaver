@@ -10,6 +10,7 @@ import 'package:vidora/features/downloads/presentation/downloads_view.dart';
 
 import '../support/download_fakes.dart';
 import '../support/in_memory_download_repository.dart';
+import '../support/localized_app.dart';
 
 void main() {
   late InMemoryDownloadRepository repository;
@@ -38,7 +39,7 @@ void main() {
           downloadTransportProvider.overrideWithValue(FakeTransport([])),
           downloadFileSystemProvider.overrideWithValue(FakeFileSystem()),
         ],
-        child: MaterialApp(
+        child: localizedApp(
           theme: buildVidoraTheme(Brightness.dark),
           home: const DownloadsView(),
         ),

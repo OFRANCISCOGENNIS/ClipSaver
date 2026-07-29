@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/tokens.dart';
 import '../../../../core/domain/value_objects/media_format.dart';
+import '../../../../l10n/l10n.dart';
 import '../../domain/media_item.dart';
 import 'authorization_badge.dart';
 
@@ -82,7 +83,7 @@ class AnalysisResultCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: VidoraSpacing.lg),
-            Text('Qualidade', style: theme.textTheme.labelLarge),
+            Text(context.l10n.resultQuality, style: theme.textTheme.labelLarge),
             const SizedBox(height: VidoraSpacing.sm),
             Wrap(
               spacing: VidoraSpacing.sm,
@@ -106,7 +107,9 @@ class AnalysisResultCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onDownload,
                 icon: const Icon(Icons.download),
-                label: Text('Baixar ${selectedFormat.qualityLabel}'),
+                label: Text(
+                  context.l10n.resultDownload(selectedFormat.qualityLabel),
+                ),
               ),
             ),
           ],
@@ -208,7 +211,10 @@ class _Restrictions extends StatelessWidget {
           const SizedBox(width: VidoraSpacing.sm),
           Expanded(
             child: Text(
-              'Condições da licença: ${restrictions.join(', ')}.',
+              // The obligations themselves come from the backend with the
+              // eligibility verdict, so they are shown verbatim; only the
+              // sentence around them is translated here.
+              context.l10n.resultLicenseTerms(restrictions.join(', ')),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),

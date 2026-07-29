@@ -41,8 +41,14 @@ void main() {
 
     test('open licenses allow download and expose restrictions', () {
       expect(License.ccBy.allowsDownload, isTrue);
-      expect(License.ccBy.restrictions, contains('atribuição obrigatória'));
-      expect(License.ccByNc.restrictions, contains('uso não comercial'));
+      expect(
+        License.ccBy.restrictions,
+        contains(LicenseRestriction.attribution),
+      );
+      expect(
+        License.ccByNc.restrictions,
+        contains(LicenseRestriction.nonCommercial),
+      );
       expect(License.cc0.restrictions, isEmpty);
     });
   });

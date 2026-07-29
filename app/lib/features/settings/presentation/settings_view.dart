@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../l10n/l10n.dart';
 import '../domain/app_settings.dart';
 import 'settings_view_model.dart';
 
@@ -27,9 +28,10 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     final async = ref.watch(settingsViewModelProvider);
     final viewModel = ref.read(settingsViewModelProvider.notifier);
     final entitlements = ref.watch(entitlementsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: SafeArea(
         child: async.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -44,14 +46,18 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             children: [
               TextField(
                 onChanged: (value) => setState(() => _query = value),
-                decoration: const InputDecoration(
-                  hintText: 'Buscar nas configurações',
-                  prefixIcon: Icon(Icons.search),
+                decoration: InputDecoration(
+                  hintText: l10n.settingsSearchHint,
+                  prefixIcon: const Icon(Icons.search),
                 ),
               ),
               const SizedBox(height: VidoraSpacing.lg),
               ..._sections(
-                  settings, viewModel, entitlements.maxConcurrentDownloads),
+                settings,
+                viewModel,
+                entitlements.maxConcurrentDownloads,
+                l10n,
+              ),
             ],
           ),
         ),
@@ -63,33 +69,36 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     AppSettings settings,
     SettingsViewModel viewModel,
     int concurrencyCeiling,
+    AppLocalizations l10n,
   ) {
     final rows = <String, List<Widget>>{
-      'Geral': [
+      l10n.settingsSectionGeneral: [
         _choice<AppThemeMode>(
-          'Tema',
+          l10n.settingsTheme,
           settings.themeMode,
           AppThemeMode.values,
-          (value) => value.label,
+          (value) => value.label(l10n),
           (value) => viewModel.apply((c) => c.copyWith(themeMode: value)),
         ),
         _choice<AppLanguage>(
-          'Idioma',
+          l10n.settingsLanguage,
           settings.language,
           AppLanguage.values,
+          // Language names stay in their own language: someone looking for
+          // English scans the list for "English", not for "Inglês".
           (value) => value.label,
           (value) => viewModel.apply((c) => c.copyWith(language: value)),
         ),
         _toggle(
-          'Detectar link na área de transferência',
+          l10n.settingsClipboardDetection,
           settings.clipboardDetection,
           (value) =>
               viewModel.apply((c) => c.copyWith(clipboardDetection: value)),
         ),
       ],
-      'Downloads': [
+      l10n.settingsSectionDownloads: [
         _slider(
-          'Downloads simultâneos',
+          l10n.settingsConcurrency,
           settings.maxConcurrentDownloads.toDouble(),
           min: 1,
           max: concurrencyCeiling.toDouble(),
@@ -98,104 +107,104 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               viewModel.setMaxConcurrentDownloads(value.round()),
         ),
         _toggle(
-          'Somente Wi-Fi',
+          l10n.settingsWifiOnly,
           settings.wifiOnly,
           (value) => viewModel.apply((c) => c.copyWith(wifiOnly: value)),
         ),
         _toggle(
-          'Retomar ao reconectar',
+          l10n.settingsResumeOnReconnect,
           settings.resumeOnReconnect,
           (value) =>
               viewModel.apply((c) => c.copyWith(resumeOnReconnect: value)),
         ),
       ],
-      'Notificações': [
+      l10n.settingsSectionNotifications: [
         _toggle(
-          'Avisar ao concluir',
+          l10n.settingsNotifyOnComplete,
           settings.notifyOnComplete,
           (value) =>
               viewModel.apply((c) => c.copyWith(notifyOnComplete: value)),
         ),
         _toggle(
-          'Avisar em caso de erro',
+          l10n.settingsNotifyOnError,
           settings.notifyOnError,
           (value) => viewModel.apply((c) => c.copyWith(notifyOnError: value)),
         ),
         _choice<NotificationStyle>(
-          'Estilo das notificações',
+          l10n.settingsNotificationStyle,
           settings.notificationStyle,
           NotificationStyle.values,
-          (value) => value.label,
+          (value) => value.label(l10n),
           (value) =>
               viewModel.apply((c) => c.copyWith(notificationStyle: value)),
         ),
         _toggle(
-          'Resumo diário',
+          l10n.settingsDailySummary,
           settings.dailySummary,
           (value) => viewModel.apply((c) => c.copyWith(dailySummary: value)),
         ),
       ],
-      'Bateria e dados': [
+      l10n.settingsSectionBattery: [
         _toggle(
-          'Modo economia',
+          l10n.settingsBatterySaver,
           settings.batterySaver,
           (value) => viewModel.apply((c) => c.copyWith(batterySaver: value)),
-          subtitle: 'Reduz downloads simultâneos e desliga animações.',
+          subtitle: l10n.settingsBatterySaverBody,
         ),
         _toggle(
-          'Pausar com bateria baixa',
+          l10n.settingsPauseOnLowBattery,
           settings.pauseOnLowBattery,
           (value) =>
               viewModel.apply((c) => c.copyWith(pauseOnLowBattery: value)),
-          subtitle: 'Abaixo de ${AppSettings.lowBatteryThreshold}%.',
+          subtitle: l10n.settingsPauseOnLowBatteryBody(
+            AppSettings.lowBatteryThreshold,
+          ),
         ),
       ],
-      'Armazenamento': [
+      l10n.settingsSectionStorage: [
         _slider(
-          'Cache de miniaturas',
+          l10n.settingsThumbnailCache,
           settings.thumbnailCacheMb.toDouble(),
           min: 50,
           max: 500,
-          label: '${settings.thumbnailCacheMb} MB',
+          label: l10n.settingsMegabytes(settings.thumbnailCacheMb),
           onChanged: (value) => viewModel
               .apply((c) => c.copyWith(thumbnailCacheMb: value.round())),
         ),
         _slider(
-          'Retenção da lixeira',
+          l10n.settingsTrashRetention,
           settings.trashRetentionDays.toDouble(),
           min: 1,
           max: 30,
-          label: '${settings.trashRetentionDays} dias',
+          label: l10n.settingsDays(settings.trashRetentionDays),
           onChanged: (value) => viewModel
               .apply((c) => c.copyWith(trashRetentionDays: value.round())),
         ),
       ],
-      'Privacidade': [
+      l10n.settingsSectionPrivacy: [
         _toggle(
-          'Enviar dados de uso',
+          l10n.settingsAnalytics,
           settings.analyticsEnabled,
           (value) =>
               viewModel.apply((c) => c.copyWith(analyticsEnabled: value)),
           // Opt-in, never opt-out: LGPD/GDPR consent must be affirmative.
-          subtitle: 'Desligado por padrão. Nada é enviado sem sua permissão.',
+          subtitle: l10n.settingsAnalyticsBody,
         ),
-        const ListTile(
+        ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Política de uso responsável'),
-          subtitle: Text(
-            'O Vidora só baixa conteúdo autorizado pela plataforma de '
-            'origem ou pelo titular dos direitos.',
-          ),
-          trailing: Icon(Icons.open_in_new, size: 18),
+          title: Text(l10n.settingsPolicy),
+          subtitle: Text(l10n.settingsPolicyBody),
+          trailing: const Icon(Icons.open_in_new, size: 18),
         ),
       ],
     };
 
+    final index = SettingsViewModel.searchIndexFor(l10n);
     final widgets = <Widget>[];
     for (final section in rows.entries) {
       final matching = <Widget>[];
       for (var i = 0; i < section.value.length; i++) {
-        final entry = SettingsViewModel.searchIndex.where(
+        final entry = index.where(
           (candidate) => candidate.section == section.key,
         );
         // A row is shown when its section still has any match for the
@@ -216,7 +225,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         Padding(
           padding: const EdgeInsets.only(top: VidoraSpacing.xl),
           child: Text(
-            'Nenhuma configuração encontrada.',
+            l10n.settingsNoResults,
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),

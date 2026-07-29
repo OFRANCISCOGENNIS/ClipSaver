@@ -13,6 +13,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Delegates de Material/Cupertino/Widgets nos três idiomas (seção 16).
+  flutter_localizations:
+    sdk: flutter
+  # Formatação de datas e números sensível ao locale.
+  intl: ^0.20.0
 
   # Estado + injeção de dependência, testável e sem BuildContext (seção 5).
   flutter_riverpod: ^2.6.0
@@ -42,3 +47,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Gera AppLocalizations a partir de lib/l10n/*.arb (ver l10n.yaml).
+  generate: true

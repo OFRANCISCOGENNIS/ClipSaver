@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/tokens.dart';
+import '../../../../l10n/l10n.dart';
 
 /// Shimmering placeholder in the shape of the result card.
 class AnalyzeSkeleton extends StatefulWidget {
@@ -34,7 +35,7 @@ class _AnalyzeSkeletonState extends State<AnalyzeSkeleton>
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Analisando o link',
+      label: context.l10n.analyzeSkeletonSemantics,
       liveRegion: true,
       child: Card(
         child: Padding(

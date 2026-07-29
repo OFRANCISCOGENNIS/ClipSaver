@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Report emitted by `flutter gen-l10n`: an empty object is the expected
+# state, and the l10n test asserts key parity anyway.
+/l10n-untranslated.json
+
 # Web runtime binaries fetched by tool/fetch_web_assets.sh — build
 # artifacts pinned by version there, not source.
 /web/sqlite3.wasm

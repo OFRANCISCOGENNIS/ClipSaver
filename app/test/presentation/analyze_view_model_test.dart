@@ -7,6 +7,7 @@ import 'package:vidora/features/analyze/presentation/analyze_state.dart';
 import 'package:vidora/features/analyze/presentation/analyze_view_model.dart';
 
 import '../support/analyze_fakes.dart';
+import '../support/localized_app.dart';
 
 void main() {
   late FakeAnalyzeRepository repository;
@@ -101,7 +102,10 @@ void main() {
 
       final phase = state().phase;
       expect(phase, isA<AnalyzeError>());
-      expect(describeFailure((phase as AnalyzeError).failure), 'Sem conexão.');
+      expect(
+        describeFailure((phase as AnalyzeError).failure, await loadL10n()),
+        'Sem conexão.',
+      );
     });
 
     test('refuses to run while the field is invalid', () async {

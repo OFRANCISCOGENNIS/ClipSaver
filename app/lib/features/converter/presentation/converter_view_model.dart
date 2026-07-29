@@ -81,11 +81,3 @@ final class ConverterViewModel extends Notifier<ConverterUiState> {
   }
 }
 
-/// Human label for a conversion state.
-String describeConversionState(ConversionState state) => switch (state) {
-      ConversionState.queued => 'Na fila',
-      ConversionState.converting => 'Convertendo',
-      ConversionState.completed => 'Concluída',
-      ConversionState.failed => 'Falhou',
-      ConversionState.canceled => 'Cancelada',
-    };

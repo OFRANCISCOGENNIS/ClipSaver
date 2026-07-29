@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/tokens.dart';
 import '../../../../core/domain/value_objects/license.dart';
+import '../../../../l10n/l10n.dart';
 import '../../domain/authorization_source.dart';
 
 /// Shows why a download is (or is not) authorized.
@@ -32,20 +33,23 @@ class AuthorizationBadge extends StatelessWidget {
 
   /// Open-license badges name the actual license (e.g. "Licença CC-BY"),
   /// which is more informative than the generic source label.
-  String get _label =>
+  String _label(AppLocalizations l10n) =>
       source == AuthorizationSource.openLicense && license != null
-          ? license!.displayName
-          : source.badgeLabel;
+          ? license!.label(l10n)
+          : source.label(l10n);
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
+    final label = _label(l10n);
     final denied = source == AuthorizationSource.none;
     final color = denied ? VidoraColors.error : VidoraColors.success;
 
     return Semantics(
-      label:
-          denied ? 'Download não autorizado: $_label' : 'Autorização: $_label',
+      label: denied
+          ? l10n.badgeUnauthorized(label)
+          : l10n.badgeAuthorization(label),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: VidoraSpacing.md,
@@ -62,7 +66,7 @@ class AuthorizationBadge extends StatelessWidget {
             Icon(_icon, size: 14, color: color),
             const SizedBox(width: VidoraSpacing.xs + 2),
             Text(
-              _label,
+              label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: scheme.onSurface,
                     fontWeight: FontWeight.w600,

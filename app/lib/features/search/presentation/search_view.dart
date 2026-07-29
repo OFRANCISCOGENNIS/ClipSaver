@@ -8,6 +8,7 @@ import '../../../app/shell.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/domain/value_objects/media_format.dart';
+import '../../../l10n/l10n.dart';
 import '../domain/search_query.dart';
 import 'search_state.dart';
 import 'search_view_model.dart';
@@ -34,9 +35,10 @@ class _SearchViewState extends ConsumerState<SearchView> {
   Widget build(BuildContext context) {
     final state = ref.watch(searchViewModelProvider);
     final viewModel = ref.read(searchViewModelProvider.notifier);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Buscar')),
+      appBar: AppBar(title: Text(l10n.navSearch)),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,12 +52,12 @@ class _SearchViewState extends ConsumerState<SearchView> {
                 onChanged: viewModel.textChanged,
                 onSubmitted: (_) => viewModel.search(),
                 decoration: InputDecoration(
-                  hintText: 'Nome, autor, plataforma ou etiqueta',
+                  hintText: l10n.searchHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _controller.text.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Limpar',
+                          tooltip: l10n.actionClear,
                           icon: const Icon(Icons.close),
                           onPressed: () {
                             _controller.clear();
@@ -80,7 +82,7 @@ class _SearchViewState extends ConsumerState<SearchView> {
                   horizontal: VidoraSpacing.lg,
                 ),
                 child: Text(
-                  'Nada exato — mostrando resultados parecidos.',
+                  l10n.searchApproximate,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -125,6 +127,7 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final query = state.query;
+    final l10n = context.l10n;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: VidoraSpacing.lg),
@@ -132,13 +135,15 @@ class _FilterBar extends StatelessWidget {
         children: [
           for (final kind in MediaKind.values)
             _Chip(
-              label: kind == MediaKind.video ? 'Vídeo' : 'Áudio',
+              label: kind == MediaKind.video
+                  ? l10n.searchKindVideo
+                  : l10n.searchKindAudio,
               selected: query.kind == kind,
               onTap: () => viewModel.toggleKind(kind),
             ),
           for (final bucket in DurationBucket.values)
             _Chip(
-              label: bucket.label,
+              label: bucket.label(l10n),
               selected: query.durationBucket == bucket,
               onTap: () => viewModel.toggleDuration(bucket),
             ),
@@ -160,7 +165,7 @@ class _FilterBar extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: viewModel.clearFilters,
                 icon: const Icon(Icons.filter_alt_off, size: 16),
-                label: Text('Limpar (${query.activeFilterCount})'),
+                label: Text(l10n.searchClearFilters(query.activeFilterCount)),
               ),
             ),
         ],
@@ -206,7 +211,7 @@ class _Results extends StatelessWidget {
         child: Padding(
           padding: kPagePadding,
           child: Text(
-            'Nenhum resultado para esta busca.',
+            context.l10n.searchEmpty,
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),

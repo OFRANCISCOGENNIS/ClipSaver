@@ -12,18 +12,15 @@ import '../../../core/domain/value_objects/media_format.dart';
 /// Duration buckets offered as filters (section 10).
 enum DurationBucket {
   /// Under five minutes.
-  short('< 5 min', null, Duration(minutes: 5)),
+  short(null, Duration(minutes: 5)),
 
   /// Between five and twenty minutes.
-  medium('5–20 min', Duration(minutes: 5), Duration(minutes: 20)),
+  medium(Duration(minutes: 5), Duration(minutes: 20)),
 
   /// Over twenty minutes.
-  long('> 20 min', Duration(minutes: 20), null);
+  long(Duration(minutes: 20), null);
 
-  const DurationBucket(this.label, this.min, this.max);
-
-  /// Chip text.
-  final String label;
+  const DurationBucket(this.min, this.max);
 
   /// Inclusive lower bound, or null for open-ended.
   final Duration? min;

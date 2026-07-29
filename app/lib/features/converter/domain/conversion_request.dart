@@ -11,21 +11,18 @@ import 'conversion_job.dart';
 /// Ready-made conversions offered on the main screen (section 11).
 enum ConversionPreset {
   /// "Compatibilidade máxima": MP4 with H.264 video and AAC audio.
-  maxCompatibility('Compatibilidade máxima', ConversionTarget.mp4),
+  maxCompatibility(ConversionTarget.mp4),
 
   /// "Menor tamanho": MP4 with H.265, roughly half the bitrate.
-  smallestSize('Menor tamanho', ConversionTarget.mp4),
+  smallestSize(ConversionTarget.mp4),
 
   /// "Áudio para podcast": MP3 at 128 kbps.
-  podcastAudio('Áudio para podcast', ConversionTarget.mp3),
+  podcastAudio(ConversionTarget.mp3),
 
   /// "Sem perdas": FLAC.
-  lossless('Sem perdas', ConversionTarget.flac);
+  lossless(ConversionTarget.flac);
 
-  const ConversionPreset(this.label, this.target);
-
-  /// Chip text.
-  final String label;
+  const ConversionPreset(this.target);
 
   /// Container the preset produces.
   final ConversionTarget target;

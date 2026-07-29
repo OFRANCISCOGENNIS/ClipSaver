@@ -6,9 +6,11 @@ import 'package:vidora/features/downloads/domain/download_state.dart';
 import 'package:vidora/features/downloads/domain/download_task.dart';
 import 'package:vidora/features/downloads/presentation/downloads_state.dart';
 import 'package:vidora/features/downloads/presentation/downloads_view_model.dart';
+import 'package:vidora/l10n/l10n.dart';
 
 import '../support/download_fakes.dart';
 import '../support/in_memory_download_repository.dart';
+import '../support/localized_app.dart';
 
 void main() {
   late InMemoryDownloadRepository repository;
@@ -201,9 +203,18 @@ void main() {
   });
 
   group('state labels', () {
-    test('every state has a human label', () {
-      for (final downloadState in DownloadState.values) {
-        expect(describeDownloadState(downloadState), isNotEmpty);
+    test('every state has a distinct label in every language', () async {
+      for (final locale in AppLocalizations.supportedLocales) {
+        final l10n = await loadL10n(locale);
+        final labels = [
+          for (final downloadState in DownloadState.values)
+            downloadState.label(l10n),
+        ];
+        expect(labels, everyElement(isNotEmpty), reason: '$locale');
+        // Distinctness matters as much as non-emptiness: two states
+        // sharing a label makes the queue lie about what it is doing.
+        expect(labels.toSet(), hasLength(DownloadState.values.length),
+            reason: '$locale');
       }
     });
   });

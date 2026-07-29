@@ -16,6 +16,7 @@ import 'core/platform/platform_services.dart';
 import 'features/settings/domain/app_settings.dart';
 import 'features/settings/presentation/onboarding_view.dart';
 import 'features/settings/presentation/settings_view_model.dart';
+import 'l10n/l10n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +36,7 @@ Future<void> main() async {
   );
 }
 
-/// Root widget: theme, routing and system-driven brightness.
+/// Root widget: theme, routing, language and system-driven brightness.
 class VidoraApp extends ConsumerStatefulWidget {
   /// Creates the app.
   const VidoraApp({super.key});
@@ -59,6 +60,10 @@ class _VidoraAppState extends ConsumerState<VidoraApp> {
       // built-in cross-fade animating the switch.
       _ => ThemeMode.system,
     };
+    // Null while the settings load, and null is exactly what tells
+    // MaterialApp to follow the device language — the right default on a
+    // first run, before the user has picked anything.
+    final locale = settings.valueOrNull?.language.locale;
 
     final light = buildVidoraTheme(Brightness.light);
     final dark = buildVidoraTheme(Brightness.dark);
@@ -68,21 +73,30 @@ class _VidoraAppState extends ConsumerState<VidoraApp> {
     final needsOnboarding = settings.valueOrNull?.onboardingCompleted == false;
     if (needsOnboarding) {
       return MaterialApp(
-        title: 'Vidora',
+        // onGenerateTitle, not title: it runs with a context that already
+        // has the localizations, so the task-switcher name follows the
+        // chosen language instead of freezing at build time.
+        onGenerateTitle: (context) => context.l10n.appName,
         debugShowCheckedModeBanner: false,
         theme: light,
         darkTheme: dark,
         themeMode: themeMode,
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: OnboardingView(onFinished: () => setState(() {})),
       );
     }
 
     return MaterialApp.router(
-      title: 'Vidora',
+      onGenerateTitle: (context) => context.l10n.appName,
       debugShowCheckedModeBanner: false,
       theme: light,
       darkTheme: dark,
       themeMode: themeMode,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: _router,
     );
   }

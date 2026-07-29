@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../l10n/l10n.dart';
 import '../../analyze/presentation/widgets/analysis_result_card.dart';
 import '../domain/library_entry.dart';
 import '../domain/library_repository.dart';
@@ -39,15 +40,16 @@ class _LibraryViewState extends ConsumerState<LibraryView> {
   Widget build(BuildContext context) {
     final state = ref.watch(libraryViewModelProvider);
     final viewModel = ref.read(libraryViewModelProvider.notifier);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Biblioteca'),
+        title: Text(l10n.navLibrary),
         actions: [
           IconButton(
             tooltip: state.viewMode == LibraryViewMode.grid
-                ? 'Ver em lista'
-                : 'Ver em grade',
+                ? l10n.libraryViewAsList
+                : l10n.libraryViewAsGrid,
             icon: Icon(
               state.viewMode == LibraryViewMode.grid
                   ? Icons.view_list_outlined
@@ -56,7 +58,7 @@ class _LibraryViewState extends ConsumerState<LibraryView> {
             onPressed: viewModel.toggleViewMode,
           ),
           PopupMenuButton<LibrarySort>(
-            tooltip: 'Ordenar',
+            tooltip: l10n.librarySort,
             icon: const Icon(Icons.sort),
             onSelected: viewModel.sortBy,
             itemBuilder: (context) => [
@@ -65,7 +67,7 @@ class _LibraryViewState extends ConsumerState<LibraryView> {
                   value: sort,
                   child: Row(
                     children: [
-                      Expanded(child: Text(_sortLabel(sort))),
+                      Expanded(child: Text(_sortLabel(sort, l10n))),
                       if (sort == state.sort)
                         Icon(
                           state.descending
@@ -90,7 +92,12 @@ class _LibraryViewState extends ConsumerState<LibraryView> {
                   Padding(
                     padding: const EdgeInsets.only(right: VidoraSpacing.sm),
                     child: ChoiceChip(
-                      label: Text('${tab.label} (${_countFor(state, tab)})'),
+                      label: Text(
+                        l10n.libraryTabWithCount(
+                          tab.label(l10n),
+                          _countFor(state, tab),
+                        ),
+                      ),
                       selected: state.tab == tab,
                       onSelected: (_) => viewModel.selectTab(tab),
                     ),
@@ -117,12 +124,12 @@ class _LibraryViewState extends ConsumerState<LibraryView> {
         LibraryTab.recents => state.counts.total,
       };
 
-  String _sortLabel(LibrarySort sort) => switch (sort) {
-        LibrarySort.downloadedAt => 'Data do download',
-        LibrarySort.name => 'Nome',
-        LibrarySort.size => 'Tamanho',
-        LibrarySort.duration => 'Duração',
-        LibrarySort.platform => 'Plataforma',
+  String _sortLabel(LibrarySort sort, AppLocalizations l10n) => switch (sort) {
+        LibrarySort.downloadedAt => l10n.librarySortDownloadedAt,
+        LibrarySort.name => l10n.librarySortName,
+        LibrarySort.size => l10n.librarySortSize,
+        LibrarySort.duration => l10n.librarySortDuration,
+        LibrarySort.platform => l10n.librarySortPlatform,
       };
 }
 
@@ -281,7 +288,7 @@ class _EntryMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     if (entry.status == LibraryFileStatus.missing) {
       return Text(
-        'Arquivo não encontrado',
+        context.l10n.libraryFileMissing,
         style: Theme.of(context)
             .textTheme
             .bodySmall
@@ -291,7 +298,7 @@ class _EntryMeta extends StatelessWidget {
     final parts = <String>[
       entry.size.formatted,
       if (entry.platform != null) entry.platform!,
-      if (entry.license != null) entry.license!.displayName,
+      if (entry.license != null) entry.license!.label(context.l10n),
     ];
     return Text(
       parts.join(' · '),
@@ -311,8 +318,8 @@ class _FavoriteButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IconButton(
         tooltip: entry.favorite
-            ? 'Remover dos favoritos'
-            : 'Adicionar aos favoritos',
+            ? context.l10n.libraryFavoriteRemove
+            : context.l10n.libraryFavoriteAdd,
         iconSize: 20,
         icon: Icon(
           entry.favorite ? Icons.favorite : Icons.favorite_border,
@@ -364,10 +371,13 @@ class _EmptyLibrary extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: VidoraSpacing.lg),
-            Text('Nada por aqui ainda', style: theme.textTheme.titleLarge),
+            Text(
+              context.l10n.libraryEmptyTitle,
+              style: theme.textTheme.titleLarge,
+            ),
             const SizedBox(height: VidoraSpacing.sm),
             Text(
-              'Downloads concluídos aparecem nesta aba.',
+              context.l10n.libraryEmptyBody,
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),

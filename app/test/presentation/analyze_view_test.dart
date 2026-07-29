@@ -8,6 +8,7 @@ import 'package:vidora/core/error/result.dart';
 import 'package:vidora/features/analyze/presentation/analyze_view.dart';
 
 import '../support/analyze_fakes.dart';
+import '../support/localized_app.dart';
 
 void main() {
   late FakeAnalyzeRepository repository;
@@ -26,7 +27,7 @@ void main() {
           clipboardReaderProvider.overrideWithValue(clipboard),
           downloadsDirectoryProvider.overrideWithValue('/downloads'),
         ],
-        child: MaterialApp(
+        child: localizedApp(
           theme: buildVidoraTheme(Brightness.light),
           home: AnalyzeView(sharedUrl: sharedUrl),
         ),

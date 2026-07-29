@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../l10n/l10n.dart';
 import '../domain/conversion_job.dart';
 import 'converter_state.dart';
 import 'converter_view_model.dart';
@@ -20,14 +21,15 @@ class ConverterView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(converterViewModelProvider);
     final viewModel = ref.read(converterViewModelProvider.notifier);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Conversor'),
+        title: Text(l10n.navConverter),
         actions: [
           if (state.hasFinishedWork)
             IconButton(
-              tooltip: 'Limpar concluídas',
+              tooltip: l10n.converterClearFinished,
               icon: const Icon(Icons.cleaning_services_outlined),
               onPressed: viewModel.clearFinished,
             ),
@@ -80,6 +82,7 @@ class ConversionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final job = item.job;
     final percent = (job.progress * 100).round();
 
@@ -101,15 +104,17 @@ class ConversionTile extends StatelessWidget {
                 ),
                 const SizedBox(width: VidoraSpacing.sm),
                 Text(
-                  describeConversionState(job.state),
+                  job.state.label(l10n),
                   style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
             const SizedBox(height: VidoraSpacing.md),
             Semantics(
-              label:
-                  '${describeConversionState(job.state)}, $percent por cento',
+              label: l10n.downloadsProgressSemantics(
+                job.state.label(l10n),
+                percent,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -133,7 +138,7 @@ class ConversionTile extends StatelessWidget {
                       item.hasDeterminateProgress ||
                               job.state != ConversionState.converting
                           ? '$percent%'
-                          : '—',
+                          : l10n.valueUnavailable,
                       textAlign: TextAlign.right,
                       style: monoStyle(context),
                     ),
@@ -157,11 +162,11 @@ class ConversionTile extends StatelessWidget {
                   TextButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Tentar de novo'),
+                    label: Text(l10n.actionRetryShort),
                   ),
                 if (item.canCancel)
                   IconButton(
-                    tooltip: 'Cancelar',
+                    tooltip: l10n.actionCancel,
                     icon: const Icon(Icons.close),
                     onPressed: onCancel,
                   ),
@@ -192,11 +197,13 @@ class _EmptyQueue extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: VidoraSpacing.lg),
-            Text('Nenhuma conversão', style: theme.textTheme.titleLarge),
+            Text(
+              context.l10n.converterEmptyTitle,
+              style: theme.textTheme.titleLarge,
+            ),
             const SizedBox(height: VidoraSpacing.sm),
             Text(
-              'Escolha um item da biblioteca para converter. '
-              'O arquivo original é preservado.',
+              context.l10n.converterEmptyBody,
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),

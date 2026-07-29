@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/tokens.dart';
+import '../../../../l10n/l10n.dart';
 import '../../domain/media_item.dart';
 import 'authorization_badge.dart';
 
@@ -23,6 +24,7 @@ class IneligibleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(VidoraSpacing.lg),
@@ -39,7 +41,7 @@ class IneligibleCard extends StatelessWidget {
                 const SizedBox(width: VidoraSpacing.sm),
                 Expanded(
                   child: Text(
-                    'Download não autorizado',
+                    l10n.ineligibleTitle,
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
@@ -59,17 +61,17 @@ class IneligibleCard extends StatelessWidget {
                   bottom: VidoraSpacing.sm,
                 ),
                 title: Text(
-                  'Detalhes técnicos',
+                  l10n.ineligibleTechnicalDetails,
                   style: theme.textTheme.labelLarge,
                 ),
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Origem analisada: ${item.url.host}\n'
-                      'Base de autorização encontrada: '
-                      '${item.eligibility.source.badgeLabel}\n'
-                      'Formatos liberados: nenhum',
+                      l10n.ineligibleDetailBody(
+                        item.url.host,
+                        item.eligibility.source.label(l10n),
+                      ),
                       style: theme.textTheme.bodySmall,
                     ),
                   ),

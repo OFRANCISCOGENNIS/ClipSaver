@@ -16,6 +16,7 @@ import '../../../app/router.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/domain/value_objects/media_format.dart';
+import '../../../l10n/l10n.dart';
 import '../../downloads/application/enqueue_download_use_case.dart';
 import '../domain/media_item.dart';
 import 'analyze_state.dart';
@@ -68,6 +69,9 @@ class _AnalyzeViewState extends ConsumerState<AnalyzeView> {
 
   Future<void> _download(MediaItem item, MediaFormat format) async {
     final messenger = ScaffoldMessenger.of(context);
+    // Captured before the await: after it, this State may be unmounted
+    // and `context` unusable.
+    final l10n = context.l10n;
     final useCase = EnqueueDownloadUseCase(
       enqueue: ref.read(downloadManagerProvider).enqueue,
       downloadsDirectory: ref.read(downloadsDirectoryProvider),
@@ -79,9 +83,9 @@ class _AnalyzeViewState extends ConsumerState<AnalyzeView> {
       (task) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text('“${task.title}” entrou na fila.'),
+            content: Text(l10n.analyzeQueuedSnack(task.title)),
             action: SnackBarAction(
-              label: 'Ver fila',
+              label: l10n.analyzeSeeQueue,
               onPressed: () => context.go(Routes.downloads),
             ),
           ),
@@ -111,7 +115,7 @@ class _AnalyzeViewState extends ConsumerState<AnalyzeView> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Vidora')),
+      appBar: AppBar(title: Text(context.l10n.appName)),
       body: SafeArea(
         child: ListView(
           padding: kPagePadding,
@@ -203,7 +207,7 @@ class _Body extends StatelessWidget {
           ),
         AnalyzeError(:final failure) => _ErrorCard(
             key: const ValueKey('error'),
-            message: describeFailure(failure),
+            message: describeFailure(failure, context.l10n),
             onRetry: onRetry,
           ),
       },
@@ -267,14 +271,14 @@ class _UrlField extends StatelessWidget {
       textInputAction: TextInputAction.go,
       style: Theme.of(context).textTheme.bodyLarge,
       decoration: InputDecoration(
-        hintText: 'Cole um link autorizado',
+        hintText: context.l10n.analyzeUrlHint,
         errorText: errorText,
         prefixIcon: const Icon(Icons.link),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
                 icon: const Icon(Icons.close),
-                tooltip: 'Limpar',
+                tooltip: context.l10n.actionClear,
                 onPressed: onClear,
               ),
       ),
@@ -302,14 +306,14 @@ class _ClipboardChip extends StatelessWidget {
         label: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 260),
           child: Text(
-            'Colar link copiado? $url',
+            context.l10n.analyzeClipboardPrompt(url),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         onPressed: onAccept,
         onDeleted: onDismiss,
-        deleteButtonTooltipMessage: 'Dispensar',
+        deleteButtonTooltipMessage: context.l10n.actionDismiss,
       ),
     );
   }
@@ -346,7 +350,7 @@ class _AnalyzeButton extends StatelessWidget {
                     color: Colors.white,
                   ),
                 )
-              : const Text('Analisar', key: ValueKey('label')),
+              : Text(context.l10n.analyzeAction, key: const ValueKey('label')),
         ),
       ),
     );
@@ -367,7 +371,10 @@ class _Recents extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Recentes', style: Theme.of(context).textTheme.labelLarge),
+        Text(
+          context.l10n.analyzeRecents,
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
         const SizedBox(height: VidoraSpacing.sm),
         for (final item in items)
           ListTile(
@@ -420,14 +427,13 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: VidoraSpacing.lg),
           Text(
-            'Baixe apenas o que é permitido',
+            context.l10n.analyzeEmptyTitle,
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: VidoraSpacing.sm),
           Text(
-            'O Vidora aceita links com download oficial, licença aberta, '
-            'conteúdo do seu próprio perfil ou arquivos públicos diretos.',
+            context.l10n.analyzeEmptyBody,
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -469,7 +475,7 @@ class _ErrorCard extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Tentar novamente'),
+                label: Text(context.l10n.actionRetry),
               ),
             ),
           ],
