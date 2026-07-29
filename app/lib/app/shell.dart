@@ -47,6 +47,11 @@ class VidoraShell extends StatelessWidget {
       icon: Icons.swap_horiz_outlined,
       selectedIcon: Icons.swap_horiz,
     ),
+    _Destination(
+      label: 'Ajustes',
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+    ),
   ];
 
   void _go(int index) => navigationShell.goBranch(

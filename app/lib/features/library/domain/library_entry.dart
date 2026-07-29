@@ -39,6 +39,7 @@ final class LibraryEntry {
     List<String> tags = const [],
     this.status = LibraryFileStatus.available,
     this.trashedAt,
+    this.lastPlayedAt,
   }) : tags = List.unmodifiable(tags) {
     if (id.trim().isEmpty) throw ArgumentError('id must not be empty');
     if (title.trim().isEmpty) throw ArgumentError('title must not be empty');
@@ -96,6 +97,10 @@ final class LibraryEntry {
   /// When the entry entered the trash; set iff [status] is trashed.
   final DateTime? trashedAt;
 
+  /// Last time the user played this item; null means never.
+  /// Drives the "nunca reproduzidos" suggestion (section 15).
+  final DateTime? lastPlayedAt;
+
   /// Whether the internal player can open this entry.
   bool get isPlayable => status == LibraryFileStatus.available;
 
@@ -112,6 +117,7 @@ final class LibraryEntry {
     List<String>? tags,
     LibraryFileStatus? status,
     DateTime? trashedAt,
+    DateTime? lastPlayedAt,
     bool clearTrashedAt = false,
   }) =>
       LibraryEntry(
@@ -129,6 +135,7 @@ final class LibraryEntry {
         tags: tags ?? this.tags,
         status: status ?? this.status,
         trashedAt: clearTrashedAt ? null : (trashedAt ?? this.trashedAt),
+        lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       );
 
   @override

@@ -12,6 +12,7 @@ import '../features/converter/presentation/converter_view.dart';
 import '../features/downloads/presentation/downloads_view.dart';
 import '../features/library/presentation/library_view.dart';
 import '../features/search/presentation/search_view.dart';
+import '../features/settings/presentation/settings_view.dart';
 import 'shell.dart';
 
 /// Route paths, referenced instead of raw strings.
@@ -30,6 +31,9 @@ abstract final class Routes {
 
   /// Conversion queue.
   static const String converter = '/converter';
+
+  /// Preferences.
+  static const String settings = '/settings';
 }
 
 /// Query parameter carrying a shared URL into [Routes.analyze],
@@ -83,6 +87,14 @@ GoRouter buildRouter({String initialLocation = Routes.analyze}) => GoRouter(
                 GoRoute(
                   path: Routes.converter,
                   builder: (context, state) => const ConverterView(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.settings,
+                  builder: (context, state) => const SettingsView(),
                 ),
               ],
             ),

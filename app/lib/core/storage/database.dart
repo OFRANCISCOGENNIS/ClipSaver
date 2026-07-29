@@ -123,6 +123,9 @@ class LibraryEntryRows extends Table {
   /// Trash entry timestamp; set iff status == trashed.
   DateTimeColumn get trashedAt => dateTime().nullable()();
 
+  /// Last playback; null means never played (section 15).
+  DateTimeColumn get lastPlayedAt => dateTime().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -169,17 +172,38 @@ class AnalysisHistoryRows extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Key-value store for user preferences (section 16).
+///
+/// One row holding the whole settings JSON, rather than a column per
+/// preference: settings change shape often, and a schema migration for
+/// every new toggle would be pure friction.
+class PreferenceRows extends Table {
+  /// Preference key.
+  TextColumn get key => text()();
+
+  /// JSON-encoded value.
+  TextColumn get value => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 /// The app database. Schema changes bump [schemaVersion] and add a
 /// migration step — never edit an existing step.
 @DriftDatabase(
-  tables: [DownloadTaskRows, LibraryEntryRows, AnalysisHistoryRows],
+  tables: [
+    DownloadTaskRows,
+    LibraryEntryRows,
+    AnalysisHistoryRows,
+    PreferenceRows,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens the database on [executor] (NativeDatabase file/memory).
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -192,6 +216,18 @@ class AppDatabase extends _$AppDatabase {
             // v2 adds the searchable author column and the FTS5 index.
             await m.addColumn(libraryEntryRows, libraryEntryRows.author);
             await customStatement(kSearchTableDdl);
+          }
+          if (from < 4) {
+            // v4 adds the preferences store.
+            await m.createTable(preferenceRows);
+          }
+          if (from < 3) {
+            // v3 tracks playback so the storage report can spot items
+            // that were downloaded and never opened.
+            await m.addColumn(
+              libraryEntryRows,
+              libraryEntryRows.lastPlayedAt,
+            );
           }
         },
         beforeOpen: (details) async {

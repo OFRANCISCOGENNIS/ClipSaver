@@ -1092,6 +1092,12 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
   late final GeneratedColumn<DateTime> trashedAt = GeneratedColumn<DateTime>(
       'trashed_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _lastPlayedAtMeta =
+      const VerificationMeta('lastPlayedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastPlayedAt = GeneratedColumn<DateTime>(
+      'last_played_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1107,7 +1113,8 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
         tagsJson,
         status,
         downloadedAt,
-        trashedAt
+        trashedAt,
+        lastPlayedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1194,6 +1201,12 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
       context.handle(_trashedAtMeta,
           trashedAt.isAcceptableOrUnknown(data['trashed_at']!, _trashedAtMeta));
     }
+    if (data.containsKey('last_played_at')) {
+      context.handle(
+          _lastPlayedAtMeta,
+          lastPlayedAt.isAcceptableOrUnknown(
+              data['last_played_at']!, _lastPlayedAtMeta));
+    }
     return context;
   }
 
@@ -1231,6 +1244,8 @@ class $LibraryEntryRowsTable extends LibraryEntryRows
           DriftSqlType.dateTime, data['${effectivePrefix}downloaded_at'])!,
       trashedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}trashed_at']),
+      lastPlayedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_played_at']),
     );
   }
 
@@ -1282,6 +1297,9 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
 
   /// Trash entry timestamp; set iff status == trashed.
   final DateTime? trashedAt;
+
+  /// Last playback; null means never played (section 15).
+  final DateTime? lastPlayedAt;
   const LibraryEntryRow(
       {required this.id,
       required this.title,
@@ -1296,7 +1314,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       required this.tagsJson,
       required this.status,
       required this.downloadedAt,
-      this.trashedAt});
+      this.trashedAt,
+      this.lastPlayedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1323,6 +1342,9 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
     map['downloaded_at'] = Variable<DateTime>(downloadedAt);
     if (!nullToAbsent || trashedAt != null) {
       map['trashed_at'] = Variable<DateTime>(trashedAt);
+    }
+    if (!nullToAbsent || lastPlayedAt != null) {
+      map['last_played_at'] = Variable<DateTime>(lastPlayedAt);
     }
     return map;
   }
@@ -1352,6 +1374,9 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       trashedAt: trashedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(trashedAt),
+      lastPlayedAt: lastPlayedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastPlayedAt),
     );
   }
 
@@ -1373,6 +1398,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       status: serializer.fromJson<String>(json['status']),
       downloadedAt: serializer.fromJson<DateTime>(json['downloadedAt']),
       trashedAt: serializer.fromJson<DateTime?>(json['trashedAt']),
+      lastPlayedAt: serializer.fromJson<DateTime?>(json['lastPlayedAt']),
     );
   }
   @override
@@ -1393,6 +1419,7 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       'status': serializer.toJson<String>(status),
       'downloadedAt': serializer.toJson<DateTime>(downloadedAt),
       'trashedAt': serializer.toJson<DateTime?>(trashedAt),
+      'lastPlayedAt': serializer.toJson<DateTime?>(lastPlayedAt),
     };
   }
 
@@ -1410,7 +1437,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           String? tagsJson,
           String? status,
           DateTime? downloadedAt,
-          Value<DateTime?> trashedAt = const Value.absent()}) =>
+          Value<DateTime?> trashedAt = const Value.absent(),
+          Value<DateTime?> lastPlayedAt = const Value.absent()}) =>
       LibraryEntryRow(
         id: id ?? this.id,
         title: title ?? this.title,
@@ -1427,6 +1455,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
         status: status ?? this.status,
         downloadedAt: downloadedAt ?? this.downloadedAt,
         trashedAt: trashedAt.present ? trashedAt.value : this.trashedAt,
+        lastPlayedAt:
+            lastPlayedAt.present ? lastPlayedAt.value : this.lastPlayedAt,
       );
   LibraryEntryRow copyWithCompanion(LibraryEntryRowsCompanion data) {
     return LibraryEntryRow(
@@ -1449,6 +1479,9 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           ? data.downloadedAt.value
           : this.downloadedAt,
       trashedAt: data.trashedAt.present ? data.trashedAt.value : this.trashedAt,
+      lastPlayedAt: data.lastPlayedAt.present
+          ? data.lastPlayedAt.value
+          : this.lastPlayedAt,
     );
   }
 
@@ -1468,7 +1501,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           ..write('tagsJson: $tagsJson, ')
           ..write('status: $status, ')
           ..write('downloadedAt: $downloadedAt, ')
-          ..write('trashedAt: $trashedAt')
+          ..write('trashedAt: $trashedAt, ')
+          ..write('lastPlayedAt: $lastPlayedAt')
           ..write(')'))
         .toString();
   }
@@ -1488,7 +1522,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
       tagsJson,
       status,
       downloadedAt,
-      trashedAt);
+      trashedAt,
+      lastPlayedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1506,7 +1541,8 @@ class LibraryEntryRow extends DataClass implements Insertable<LibraryEntryRow> {
           other.tagsJson == this.tagsJson &&
           other.status == this.status &&
           other.downloadedAt == this.downloadedAt &&
-          other.trashedAt == this.trashedAt);
+          other.trashedAt == this.trashedAt &&
+          other.lastPlayedAt == this.lastPlayedAt);
 }
 
 class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
@@ -1524,6 +1560,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
   final Value<String> status;
   final Value<DateTime> downloadedAt;
   final Value<DateTime?> trashedAt;
+  final Value<DateTime?> lastPlayedAt;
   final Value<int> rowid;
   const LibraryEntryRowsCompanion({
     this.id = const Value.absent(),
@@ -1540,6 +1577,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     this.status = const Value.absent(),
     this.downloadedAt = const Value.absent(),
     this.trashedAt = const Value.absent(),
+    this.lastPlayedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LibraryEntryRowsCompanion.insert({
@@ -1557,6 +1595,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     required String status,
     required DateTime downloadedAt,
     this.trashedAt = const Value.absent(),
+    this.lastPlayedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         title = Value(title),
@@ -1580,6 +1619,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     Expression<String>? status,
     Expression<DateTime>? downloadedAt,
     Expression<DateTime>? trashedAt,
+    Expression<DateTime>? lastPlayedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1597,6 +1637,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
       if (status != null) 'status': status,
       if (downloadedAt != null) 'downloaded_at': downloadedAt,
       if (trashedAt != null) 'trashed_at': trashedAt,
+      if (lastPlayedAt != null) 'last_played_at': lastPlayedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1616,6 +1657,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
       Value<String>? status,
       Value<DateTime>? downloadedAt,
       Value<DateTime?>? trashedAt,
+      Value<DateTime?>? lastPlayedAt,
       Value<int>? rowid}) {
     return LibraryEntryRowsCompanion(
       id: id ?? this.id,
@@ -1632,6 +1674,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
       status: status ?? this.status,
       downloadedAt: downloadedAt ?? this.downloadedAt,
       trashedAt: trashedAt ?? this.trashedAt,
+      lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1681,6 +1724,9 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
     if (trashedAt.present) {
       map['trashed_at'] = Variable<DateTime>(trashedAt.value);
     }
+    if (lastPlayedAt.present) {
+      map['last_played_at'] = Variable<DateTime>(lastPlayedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1704,6 +1750,7 @@ class LibraryEntryRowsCompanion extends UpdateCompanion<LibraryEntryRow> {
           ..write('status: $status, ')
           ..write('downloadedAt: $downloadedAt, ')
           ..write('trashedAt: $trashedAt, ')
+          ..write('lastPlayedAt: $lastPlayedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2344,6 +2391,199 @@ class AnalysisHistoryRowsCompanion extends UpdateCompanion<AnalysisHistoryRow> {
   }
 }
 
+class $PreferenceRowsTable extends PreferenceRows
+    with TableInfo<$PreferenceRowsTable, PreferenceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PreferenceRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+      'value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [key, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'preference_rows';
+  @override
+  VerificationContext validateIntegrity(Insertable<PreferenceRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  PreferenceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PreferenceRow(
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}value'])!,
+    );
+  }
+
+  @override
+  $PreferenceRowsTable createAlias(String alias) {
+    return $PreferenceRowsTable(attachedDatabase, alias);
+  }
+}
+
+class PreferenceRow extends DataClass implements Insertable<PreferenceRow> {
+  /// Preference key.
+  final String key;
+
+  /// JSON-encoded value.
+  final String value;
+  const PreferenceRow({required this.key, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  PreferenceRowsCompanion toCompanion(bool nullToAbsent) {
+    return PreferenceRowsCompanion(
+      key: Value(key),
+      value: Value(value),
+    );
+  }
+
+  factory PreferenceRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PreferenceRow(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  PreferenceRow copyWith({String? key, String? value}) => PreferenceRow(
+        key: key ?? this.key,
+        value: value ?? this.value,
+      );
+  PreferenceRow copyWithCompanion(PreferenceRowsCompanion data) {
+    return PreferenceRow(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PreferenceRow(')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PreferenceRow &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class PreferenceRowsCompanion extends UpdateCompanion<PreferenceRow> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const PreferenceRowsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PreferenceRowsCompanion.insert({
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  })  : key = Value(key),
+        value = Value(value);
+  static Insertable<PreferenceRow> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PreferenceRowsCompanion copyWith(
+      {Value<String>? key, Value<String>? value, Value<int>? rowid}) {
+    return PreferenceRowsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PreferenceRowsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2353,12 +2593,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $LibraryEntryRowsTable(this);
   late final $AnalysisHistoryRowsTable analysisHistoryRows =
       $AnalysisHistoryRowsTable(this);
+  late final $PreferenceRowsTable preferenceRows = $PreferenceRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [downloadTaskRows, libraryEntryRows, analysisHistoryRows];
+      [downloadTaskRows, libraryEntryRows, analysisHistoryRows, preferenceRows];
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);
@@ -2791,6 +3032,7 @@ typedef $$LibraryEntryRowsTableCreateCompanionBuilder
   required String status,
   required DateTime downloadedAt,
   Value<DateTime?> trashedAt,
+  Value<DateTime?> lastPlayedAt,
   Value<int> rowid,
 });
 typedef $$LibraryEntryRowsTableUpdateCompanionBuilder
@@ -2809,6 +3051,7 @@ typedef $$LibraryEntryRowsTableUpdateCompanionBuilder
   Value<String> status,
   Value<DateTime> downloadedAt,
   Value<DateTime?> trashedAt,
+  Value<DateTime?> lastPlayedAt,
   Value<int> rowid,
 });
 
@@ -2862,6 +3105,9 @@ class $$LibraryEntryRowsTableFilterComposer
 
   ColumnFilters<DateTime> get trashedAt => $composableBuilder(
       column: $table.trashedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastPlayedAt => $composableBuilder(
+      column: $table.lastPlayedAt, builder: (column) => ColumnFilters(column));
 }
 
 class $$LibraryEntryRowsTableOrderingComposer
@@ -2916,6 +3162,10 @@ class $$LibraryEntryRowsTableOrderingComposer
 
   ColumnOrderings<DateTime> get trashedAt => $composableBuilder(
       column: $table.trashedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastPlayedAt => $composableBuilder(
+      column: $table.lastPlayedAt,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$LibraryEntryRowsTableAnnotationComposer
@@ -2968,6 +3218,9 @@ class $$LibraryEntryRowsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get trashedAt =>
       $composableBuilder(column: $table.trashedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastPlayedAt => $composableBuilder(
+      column: $table.lastPlayedAt, builder: (column) => column);
 }
 
 class $$LibraryEntryRowsTableTableManager extends RootTableManager<
@@ -3011,6 +3264,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<DateTime> downloadedAt = const Value.absent(),
             Value<DateTime?> trashedAt = const Value.absent(),
+            Value<DateTime?> lastPlayedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LibraryEntryRowsCompanion(
@@ -3028,6 +3282,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             status: status,
             downloadedAt: downloadedAt,
             trashedAt: trashedAt,
+            lastPlayedAt: lastPlayedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -3045,6 +3300,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             required String status,
             required DateTime downloadedAt,
             Value<DateTime?> trashedAt = const Value.absent(),
+            Value<DateTime?> lastPlayedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LibraryEntryRowsCompanion.insert(
@@ -3062,6 +3318,7 @@ class $$LibraryEntryRowsTableTableManager extends RootTableManager<
             status: status,
             downloadedAt: downloadedAt,
             trashedAt: trashedAt,
+            lastPlayedAt: lastPlayedAt,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -3373,6 +3630,135 @@ typedef $$AnalysisHistoryRowsTableProcessedTableManager = ProcessedTableManager<
     ),
     AnalysisHistoryRow,
     PrefetchHooks Function()>;
+typedef $$PreferenceRowsTableCreateCompanionBuilder = PreferenceRowsCompanion
+    Function({
+  required String key,
+  required String value,
+  Value<int> rowid,
+});
+typedef $$PreferenceRowsTableUpdateCompanionBuilder = PreferenceRowsCompanion
+    Function({
+  Value<String> key,
+  Value<String> value,
+  Value<int> rowid,
+});
+
+class $$PreferenceRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $PreferenceRowsTable> {
+  $$PreferenceRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+}
+
+class $$PreferenceRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PreferenceRowsTable> {
+  $$PreferenceRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PreferenceRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PreferenceRowsTable> {
+  $$PreferenceRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$PreferenceRowsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PreferenceRowsTable,
+    PreferenceRow,
+    $$PreferenceRowsTableFilterComposer,
+    $$PreferenceRowsTableOrderingComposer,
+    $$PreferenceRowsTableAnnotationComposer,
+    $$PreferenceRowsTableCreateCompanionBuilder,
+    $$PreferenceRowsTableUpdateCompanionBuilder,
+    (
+      PreferenceRow,
+      BaseReferences<_$AppDatabase, $PreferenceRowsTable, PreferenceRow>
+    ),
+    PreferenceRow,
+    PrefetchHooks Function()> {
+  $$PreferenceRowsTableTableManager(
+      _$AppDatabase db, $PreferenceRowsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PreferenceRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PreferenceRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PreferenceRowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PreferenceRowsCompanion(
+            key: key,
+            value: value,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String key,
+            required String value,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PreferenceRowsCompanion.insert(
+            key: key,
+            value: value,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PreferenceRowsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PreferenceRowsTable,
+    PreferenceRow,
+    $$PreferenceRowsTableFilterComposer,
+    $$PreferenceRowsTableOrderingComposer,
+    $$PreferenceRowsTableAnnotationComposer,
+    $$PreferenceRowsTableCreateCompanionBuilder,
+    $$PreferenceRowsTableUpdateCompanionBuilder,
+    (
+      PreferenceRow,
+      BaseReferences<_$AppDatabase, $PreferenceRowsTable, PreferenceRow>
+    ),
+    PreferenceRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3383,4 +3769,6 @@ class $AppDatabaseManager {
       $$LibraryEntryRowsTableTableManager(_db, _db.libraryEntryRows);
   $$AnalysisHistoryRowsTableTableManager get analysisHistoryRows =>
       $$AnalysisHistoryRowsTableTableManager(_db, _db.analysisHistoryRows);
+  $$PreferenceRowsTableTableManager get preferenceRows =>
+      $$PreferenceRowsTableTableManager(_db, _db.preferenceRows);
 }

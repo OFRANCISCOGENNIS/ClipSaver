@@ -46,5 +46,5 @@ código-fonte, por isso não são versionados.
 | 2 | Backend (eligibility + analysis) + infraestrutura local do app | ✅ concluída |
 | 3 | Telas Analyze e Downloads | ✅ concluída |
 | 4 | Library, Search e Converter | ✅ concluída |
-| 5 | Premium, IA, Settings e polimento | ⏳ |
+| 5 | Premium, IA, Settings e polimento | ✅ concluída |
 | 6 | CI/CD, builds de release e documentação final | ⏳ |

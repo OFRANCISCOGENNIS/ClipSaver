@@ -26,8 +26,11 @@ import '../features/downloads/infrastructure/download_transport.dart';
 import '../features/downloads/infrastructure/drift_download_repository.dart';
 import '../features/library/domain/library_repository.dart';
 import '../features/library/infrastructure/drift_library_repository.dart';
+import '../features/premium/domain/entitlements.dart';
 import '../features/search/domain/search_repository.dart';
 import '../features/search/infrastructure/drift_search_repository.dart';
+import '../features/settings/domain/settings_repository.dart';
+import '../features/settings/infrastructure/drift_settings_repository.dart';
 
 /// Base URL of the Vidora API.
 ///
@@ -110,9 +113,18 @@ final downloadEngineProvider = Provider<DownloadEngine>(
   ),
 );
 
-/// Maximum parallel downloads (section 8.2: 1–8, default 3). Settings
-/// writes to this in phase 5.
-final maxConcurrentDownloadsProvider = Provider<int>((ref) => 3);
+/// User preferences.
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  final repository = DriftSettingsRepository(ref.watch(databaseProvider));
+  ref.onDispose(() => repository.dispose());
+  return repository;
+});
+
+/// The active plan (section 14).
+///
+/// Overridden by the billing layer once store receipts are wired; free is
+/// the safe default — never grant paid features on a failed lookup.
+final entitlementsProvider = Provider<Entitlements>((ref) => Entitlements.free);
 
 /// The queue scheduler. Disposed with the container so in-flight
 /// transfers are canceled instead of leaking.
@@ -120,7 +132,11 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
   final manager = DownloadManager(
     repository: ref.watch(downloadRepositoryProvider),
     engine: ref.watch(downloadEngineProvider),
-    maxConcurrent: ref.watch(maxConcurrentDownloadsProvider),
+    // The plan is the ceiling, the setting is the request: a stale
+    // setting from a lapsed subscription can never exceed the free limit.
+    maxConcurrent: ref.watch(entitlementsProvider).clampConcurrency(
+          ref.watch(requestedConcurrencyProvider),
+        ),
   );
   ref.onDispose(manager.dispose);
   return manager;
@@ -163,3 +179,9 @@ final conversionManagerProvider = Provider<ConversionManager>((ref) {
   ref.onDispose(manager.dispose);
   return manager;
 });
+
+/// Concurrency the user asked for in Settings, before the plan clamp.
+///
+/// Overridden at bootstrap from the persisted settings; the default
+/// matches section 8.2.
+final requestedConcurrencyProvider = Provider<int>((ref) => 3);

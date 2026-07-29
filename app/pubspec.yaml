@@ -20,6 +20,7 @@ dependencies:
   go_router: ^14.6.0
   # Modelos imutáveis de UiState (seção 4.1).
   freezed_annotation: ^3.0.0
+  json_annotation: ^4.9.0
   # HTTP com cancelamento e progresso (seção 5).
   dio: ^5.7.0
   # Banco local reativo e tipado com migrations versionadas (seção 5).
@@ -36,6 +37,7 @@ dev_dependencies:
   build_runner: ^2.4.0
   drift_dev: ^2.28.0
   freezed: ^3.0.0
+  json_serializable: ^6.9.0
   lints: ^5.0.0
 
 flutter:

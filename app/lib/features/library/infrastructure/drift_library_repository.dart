@@ -303,6 +303,7 @@ final class DriftLibraryRepository implements LibraryRepository {
         status: Value(entry.status.name),
         downloadedAt: Value(entry.downloadedAt),
         trashedAt: Value(entry.trashedAt),
+        lastPlayedAt: Value(entry.lastPlayedAt),
       );
 
   LibraryEntry _toEntity(LibraryEntryRow row) => LibraryEntry(
@@ -325,5 +326,6 @@ final class DriftLibraryRepository implements LibraryRepository {
             LibraryFileStatus.values.firstWhere((s) => s.name == row.status),
         downloadedAt: row.downloadedAt,
         trashedAt: row.trashedAt,
+        lastPlayedAt: row.lastPlayedAt,
       );
 }
