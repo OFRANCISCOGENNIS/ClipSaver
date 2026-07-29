@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: vidora
+    # Never into the selector: `spec.selector` is immutable once a
+    # Deployment exists, so a label added here would make every future
+    # apply fail on a live cluster.
+    includeSelectors: false
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - ingress.yaml
+
+# Generated rather than a plain manifest so the name carries a content
+# hash: kustomize rewrites the Deployment's reference to it, which means a
+# configuration change rolls the pods instead of sitting in a ConfigMap
+# that nothing reread.
+configMapGenerator:
+  - name: vidora-api-config
+    literals:
+      - NODE_ENV=production
+      - PORT=3000
+      # Section 4.3: analyses are idempotent for 24h against the same URL.
+      - ANALYSIS_CACHE_TTL_SECONDS=86400
+      # Per-IP rate limit (section 13). The health probes are exempt in
+      # code, so tightening this cannot evict healthy pods.
+      - THROTTLE_TTL_SECONDS=60
+      - THROTTLE_LIMIT=30
+      # Section 13: short-lived access token, long-lived rotating refresh.
+      - JWT_ACCESS_TTL_SECONDS=900
+      - REFRESH_TTL_SECONDS=2592000

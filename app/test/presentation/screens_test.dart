@@ -336,8 +336,7 @@ void main() {
       });
     });
 
-    testWidgets('renders a queued job by its output file name',
-        (tester) async {
+    testWidgets('renders a queued job by its output file name', (tester) async {
       await seed(id: 'v1');
       await container().read(conversionManagerProvider).enqueue(
             libraryEntryId: 'v1',

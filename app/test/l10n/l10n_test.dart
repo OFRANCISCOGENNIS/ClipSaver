@@ -163,8 +163,7 @@ void main() {
       );
     });
 
-    test('licenses that authorize a download all have a badge name',
-        () async {
+    test('licenses that authorize a download all have a badge name', () async {
       const authorizing = [
         License.publicDomain,
         License.cc0,

@@ -87,7 +87,8 @@ void main() {
     });
 
     test('MediaFormat', () {
-      const one = MediaFormat(id: 'v720', kind: MediaKind.video, container: 'mp4');
+      const one =
+          MediaFormat(id: 'v720', kind: MediaKind.video, container: 'mp4');
       const same =
           MediaFormat(id: 'v720', kind: MediaKind.audio, container: 'mp3');
       expect(one.hashCode, same.hashCode);
@@ -139,8 +140,7 @@ void main() {
     });
 
     test('LibraryCounts', () {
-      const one =
-          LibraryCounts(videos: 3, audios: 2, favorites: 1, trashed: 0);
+      const one = LibraryCounts(videos: 3, audios: 2, favorites: 1, trashed: 0);
       const same =
           LibraryCounts(videos: 3, audios: 2, favorites: 1, trashed: 0);
       const other =
@@ -269,15 +269,16 @@ void main() {
 
   group('quality labels fall back in order', () {
     test('height, then bitrate, then container', () {
-      const withHeight =
-          MediaFormat(id: 'a', kind: MediaKind.video, container: 'mp4', height: 720);
+      const withHeight = MediaFormat(
+          id: 'a', kind: MediaKind.video, container: 'mp4', height: 720);
       const withBitrate = MediaFormat(
         id: 'b',
         kind: MediaKind.audio,
         container: 'mp3',
         bitrateKbps: 128,
       );
-      const bare = MediaFormat(id: 'c', kind: MediaKind.audio, container: 'flac');
+      const bare =
+          MediaFormat(id: 'c', kind: MediaKind.audio, container: 'flac');
 
       expect(withHeight.qualityLabel, '720p');
       expect(withBitrate.qualityLabel, '128 kbps');

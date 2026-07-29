@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vidora-staging
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+patches:
+  - path: scale.yaml
+  - path: ingress-host.yaml
+
+configMapGenerator:
+  - name: vidora-api-config
+    behavior: merge
+    literals:
+      # Staging runs the same code with a shorter cache, so a fix is
+      # observable without waiting a day for entries to expire.
+      - ANALYSIS_CACHE_TTL_SECONDS=300

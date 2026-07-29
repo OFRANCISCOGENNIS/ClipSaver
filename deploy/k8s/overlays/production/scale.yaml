@@ -1,0 +1,9 @@
+# Three replicas as the floor, so the PodDisruptionBudget still permits a
+# node drain while two pods keep serving.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vidora-api
+spec:
+  minReplicas: 3
+  maxReplicas: 20

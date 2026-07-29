@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vidora-api
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # The app enforces its own per-IP limit; this one exists so a flood
+    # never reaches the pods at all.
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [api.vidora.example]
+      secretName: vidora-api-tls
+  rules:
+    - host: api.vidora.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vidora-api
+                port:
+                  name: http

@@ -80,4 +80,3 @@ final class ConverterViewModel extends Notifier<ConverterUiState> {
     await _manager.clearFinished();
   }
 }
-
