@@ -1,6 +1,6 @@
 /**
- * Root module: validated env, global rate limiting and the three Phase 2
- * feature modules (eligibility, analysis, auth).
+ * Root module: validated env, global rate limiting and the feature
+ * modules (eligibility, analysis, auth, health).
  */
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
@@ -10,6 +10,7 @@ import { EnvModule } from './config/env.module.js';
 import { AnalysisModule } from './modules/analysis/analysis.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { EligibilityModule } from './modules/eligibility/eligibility.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EligibilityModule } from './modules/eligibility/eligibility.module.js';
     EligibilityModule,
     AnalysisModule,
     AuthModule,
+    HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

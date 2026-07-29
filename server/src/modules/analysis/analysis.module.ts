@@ -55,6 +55,9 @@ export const REDIS = Symbol('REDIS');
         redis ? new BullMqAnalysisExecutor(redis, service) : new InlineAnalysisExecutor(service),
     },
   ],
-  exports: [AnalysisService],
+  // REDIS is exported so the readiness probe checks the same connection
+  // the queue uses, instead of opening a second one that can be healthy
+  // while the real pool is not.
+  exports: [AnalysisService, REDIS],
 })
 export class AnalysisModule {}

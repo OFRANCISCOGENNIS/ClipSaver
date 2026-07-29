@@ -1,11 +1,11 @@
 {
-    "name": "vidora",
-    "short_name": "vidora",
+    "name": "Vidora — downloads autorizados",
+    "short_name": "Vidora",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B0D12",
+    "theme_color": "#7C3AED",
+    "description": "Baixa, organiza e converte mídia apenas quando a plataforma de origem ou o titular dos direitos autoriza.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

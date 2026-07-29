@@ -31,6 +31,8 @@ export interface PrismaLike {
       data: { revokedAt: Date };
     }): Promise<unknown>;
   };
+  /** Used by the readiness probe for a `SELECT 1` round trip. */
+  $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown>;
 }
 
 const clients = new Map<string, Promise<PrismaLike>>();

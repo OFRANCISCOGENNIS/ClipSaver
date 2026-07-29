@@ -33,6 +33,17 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Web runtime binaries fetched by tool/fetch_web_assets.sh — build
+# artifacts pinned by version there, not source.
+/web/sqlite3.wasm
+/web/drift_worker.js
+
+# Release signing material. Kept out of the repository on purpose; CI
+# writes it from secrets (see .github/workflows/release.yml).
+/android/key.properties
+/android/*.jks
+/android/*.keystore
+
 # Symbolication related
 app.*.symbols
 

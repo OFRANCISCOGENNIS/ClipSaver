@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Outbound HTTP. The template omits it, so the sandboxed release
+	     build has no network at all while debug (which grants more) works
+	     — the failure only shows up in the shipped app. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Writing finished downloads to a folder the user picked outside
+	     the container (section 16: pasta de downloads). -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<key>com.apple.security.files.downloads.read-write</key>
+	<true/>
+</dict>
+</plist>

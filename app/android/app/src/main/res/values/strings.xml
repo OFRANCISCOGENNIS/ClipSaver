@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher label. The product name is not translated; the UI inside
+         the app is (see lib/l10n). -->
+    <string name="app_name">Vidora</string>
+</resources>
