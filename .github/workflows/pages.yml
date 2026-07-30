@@ -12,7 +12,10 @@
 # que pode ser baixado). Publicar só a maquete esconderia o app; publicar só
 # o app deixaria a porta de entrada mostrando um erro de conexão.
 #
-# Configuração única, no GitHub: Settings → Pages → Source: "GitHub Actions".
+# O próprio workflow liga o Pages no modo "GitHub Actions" (enablement: true
+# no configure-pages), então não há passo manual em Settings — sem isso a
+# primeira execução monta o site inteiro e morre no fim, com um 404 do
+# endpoint de Pages.
 name: Pages
 
 on:
@@ -100,7 +103,15 @@ jobs:
           echo "--- árvore publicada ---"
           find site -maxdepth 2 -name '*.html' | sort
 
+      # enablement: true faz a action ligar o Pages neste repositório e fixar
+      # o build_type em "workflow", usando o GITHUB_TOKEN e a permissão
+      # pages: write acima. Sem isso, um repositório que nunca teve Pages
+      # devolve 404 no endpoint e a publicação falha depois do site pronto —
+      # deixar isso como pré-requisito manual é transformar um passo
+      # automatizável em uma nota de documentação que alguém vai esquecer.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
