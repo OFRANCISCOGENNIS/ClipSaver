@@ -1,0 +1,210 @@
+# Continuous integration: lint, tests, coverage gates and build proofs.
+#
+# The jobs are split by target rather than by step so a Flutter failure and
+# a backend failure show up as two independent red marks — a single job
+# would stop at the first one and hide the other.
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+# A new push to the same branch makes the previous run irrelevant. Runs on
+# main are never cancelled: they gate the deploy.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  # Pinned to the version the lockfile and the generated code were produced
+  # with; "stable" would silently change the toolchain under the gates.
+  FLUTTER_VERSION: "3.44.8"
+  NODE_VERSION: "20"
+
+jobs:
+  server:
+    name: Backend (NestJS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      # `ci`, not `install`: the lockfile is the contract, and `install`
+      # would quietly resolve past it.
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check
+        run: npm run typecheck
+
+      # The thresholds live in vitest.config.ts, so this step fails the
+      # build on coverage as well as on a failing test.
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage
+          path: server/coverage/
+          retention-days: 7
+
+  app:
+    name: App (Flutter)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      # Generated code is committed, so a stale checkout is a real defect:
+      # the analyzer would pass locally against files nobody regenerated.
+      - name: Verify generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+          git diff --exit-code -- lib \
+            || { echo "::error::Código gerado desatualizado — rode build_runner e gen-l10n."; exit 1; }
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test tool
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test with coverage
+        run: flutter test --coverage
+
+      # Section 4.4: >= 95% on domain/application, >= 80% overall. The
+      # script reports the biggest gaps when it fails, so a red build is a
+      # work list rather than a number to argue with.
+      - name: Coverage gates
+        run: dart run tool/check_coverage.dart
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-coverage
+          path: app/coverage/lcov.info
+          retention-days: 7
+
+  web-build:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: app
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # sqlite3.wasm and drift_worker.js are runtime binaries, fetched by
+      # version rather than committed.
+      - name: Fetch web runtime assets
+        run: ./tool/fetch_web_assets.sh
+
+      - name: Build
+        run: flutter build web --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: app/build/web/
+          retention-days: 7
+
+  manifests:
+    name: Kubernetes manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A broken overlay otherwise surfaces mid-deploy, which is the worst
+      # moment to discover it.
+      - name: Render both overlays
+        run: |
+          for overlay in staging production; do
+            echo "→ $overlay"
+            kubectl kustomize "deploy/k8s/overlays/$overlay" > "/tmp/$overlay.yaml"
+            grep -q 'IMAGE_PLACEHOLDER' "/tmp/$overlay.yaml" \
+              || { echo "::error::$overlay perdeu o marcador de imagem — o deploy não teria o que substituir."; exit 1; }
+          done
+
+      - name: Check the smoke test is executable and valid
+        run: |
+          test -x deploy/smoke-test.sh || { echo "::error::deploy/smoke-test.sh não é executável."; exit 1; }
+          bash -n deploy/smoke-test.sh
+
+  docker:
+    name: Build API image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Built but not pushed: CI proves the Dockerfile still works; only
+      # the deploy workflow publishes, and only from main.
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          target: production
+          push: false
+          load: true
+          tags: vidora-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # A container that builds but exits on boot is a broken image; the
+      # readiness probe answering is the cheapest proof it is not.
+      - name: Smoke test the image
+        run: |
+          docker run -d --name vidora-api-ci -p 3000:3000 \
+            -e NODE_ENV=production \
+            -e JWT_SECRET=ci-only-secret-0123456789abcdef \
+            vidora-api:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/health/ready > /dev/null; then
+              echo "API respondeu ao readiness probe."
+              docker rm -f vidora-api-ci
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::A API não respondeu em 60s."
+          docker logs vidora-api-ci
+          docker rm -f vidora-api-ci
+          exit 1

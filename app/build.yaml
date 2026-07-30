@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # ISO-8601 text preserves the UTC flag across round-trips;
+          # integer storage silently converts to local time on read.
+          store_date_time_values_as_text: true

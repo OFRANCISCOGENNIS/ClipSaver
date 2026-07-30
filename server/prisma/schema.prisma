@@ -1,0 +1,37 @@
+// Vidora — relational schema (Postgres 16, section 5).
+// Phase 2 scope: identity + refresh-token families. Sync/billing tables
+// arrive in Phase 5 with their own migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 no longer accepts `url` here: the connection string lives in
+// prisma.config.ts for the CLI, and reaches the client through an adapter.
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String         @id @db.Uuid
+  email        String         @unique @db.VarChar(320)
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  refreshTokens RefreshToken[]
+}
+
+// One row per issued refresh token. Tokens are stored hashed (sha256);
+// familyId groups rotations so reuse detection can revoke the whole
+// session line at once (section 13).
+model RefreshToken {
+  id        String    @id @db.Uuid
+  userId    String    @db.Uuid
+  familyId  String    @db.Uuid
+  tokenHash String    @unique @db.Char(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+}

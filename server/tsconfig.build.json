@@ -1,0 +1,14 @@
+{
+  // Production emit. The base config also type-checks `test/`, which makes
+  // tsc treat the common ancestor as the root and emit `dist/src/main.js`
+  // instead of `dist/main.js` — a path the image's CMD would never find.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    // The test globals are not available to the compiled server, and
+    // referencing them here would fail once devDependencies are pruned.
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

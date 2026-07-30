@@ -1,0 +1,8 @@
+# Staging exists to catch defects, not to absorb load.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vidora-api
+spec:
+  minReplicas: 1
+  maxReplicas: 3

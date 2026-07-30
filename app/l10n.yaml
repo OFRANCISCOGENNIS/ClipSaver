@@ -1,0 +1,16 @@
+# Configuration for `flutter gen-l10n` (section 16: pt-BR, en, es).
+#
+# pt-BR is the template because it is the language the product is designed
+# in — writing the source strings in a translation would put every future
+# copy change one round trip away from the person making it.
+arb-dir: lib/l10n
+template-arb-file: app_pt.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# Generated into the package's lib/ so tests and the analyzer see it the
+# same way they see hand-written code.
+output-dir: lib/l10n/generated
+nullable-getter: false
+# A key present in the template but missing from a translation is a bug
+# that ships silently as Portuguese text in an English UI.
+untranslated-messages-file: l10n-untranslated.json

@@ -1,0 +1,118 @@
+# Publica o site no GitHub Pages.
+#
+# Duas coisas no mesmo domínio, de propósito:
+#
+#   /ClipSaver/        o protótipo navegável (prototype/index.html)
+#   /ClipSaver/app/    o PWA Flutter de verdade, compilado deste repositório
+#
+# O protótipo é o que se abre para entender o produto em trinta segundos: ele
+# roda sem backend porque os vereditos são simulados localmente. O app é o
+# software real — e a tela Analyze dele depende de API, porque elegibilidade
+# é decidida no servidor (seção 2.2: o cliente nunca é a autoridade sobre o
+# que pode ser baixado). Publicar só a maquete esconderia o app; publicar só
+# o app deixaria a porta de entrada mostrando um erro de conexão.
+#
+# Configuração única, no GitHub: Settings → Pages → Source: "GitHub Actions".
+name: Pages
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/**"
+      - "prototype/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  # Nunca cancelar no meio de uma publicação: um deploy pela metade é pior
+  # do que um deploy velho, e o Pages fica com um deployment pendente.
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.44.8"
+
+jobs:
+  build:
+    name: Montar o site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolver dependências
+        working-directory: app
+        run: flutter pub get
+
+      # sqlite3.wasm / drift_worker.js: binários de runtime buscados por
+      # versão, não versionados. O banco do app não abre sem eles.
+      - name: Buscar os binários do runtime web
+        working-directory: app
+        run: ./tool/fetch_web_assets.sh
+
+      - name: Compilar o app
+        working-directory: app
+        env:
+          # Vazia a não ser que a variável de repositório exista; sem ela a
+          # tela Analyze reporta erro de conexão em vez de fingir veredito.
+          API_BASE_URL: ${{ vars.VIDORA_API_BASE_URL }}
+        run: |
+          flutter build web --release \
+            --base-href "/${{ github.event.repository.name }}/app/" \
+            --dart-define=VIDORA_API_BASE_URL="${API_BASE_URL}"
+
+      - name: Montar a árvore do site
+        run: |
+          mkdir -p site
+          cp -r prototype/. site/
+          mkdir -p site/app
+          cp -r app/build/web/. site/app/
+          # O Pages serve um único 404.html para todo o site, e as duas
+          # aplicações usam caminhos reais (/downloads, /library…). Sem um
+          # despachante, um deep link ou um F5 cai em 404 — este devolve a
+          # rota para quem é dono dela.
+          cat > site/404.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="pt-BR"><head><meta charset="UTF-8">
+          <title>Vidora</title>
+          <script>
+            var base = "/${{ github.event.repository.name }}/";
+            var path = location.pathname;
+            location.replace(
+              path.indexOf(base + "app/") === 0 ? base + "app/" : base);
+          </script>
+          </head><body></body></html>
+          HTML
+          # Jekyll ignora diretórios e arquivos que começam com "_", e o
+          # build do Flutter tem vários. Sem isto eles não são publicados.
+          touch site/.nojekyll
+          echo "--- árvore publicada ---"
+          find site -maxdepth 2 -name '*.html' | sort
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Publicar
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

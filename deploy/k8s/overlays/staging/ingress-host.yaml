@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vidora-api
+spec:
+  tls:
+    - hosts: [api-staging.vidora.example]
+      secretName: vidora-api-staging-tls
+  rules:
+    - host: api-staging.vidora.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vidora-api
+                port:
+                  name: http

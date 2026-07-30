@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vidora-api
+spec:
+  # minAvailable, not maxUnavailable: expressed this way the budget still
+  # protects the service when the HPA has scaled down to minReplicas.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vidora-api

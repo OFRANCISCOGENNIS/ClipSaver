@@ -1,0 +1,149 @@
+# Deploy the API: build once, promote the same image through staging and
+# production (section 17).
+#
+# The image is built a single time and referenced by digest from there on.
+# Rebuilding per environment would mean production runs bytes that were
+# never the ones staging approved.
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "server/**"
+      - "deploy/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/vidora-api
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+      image: ${{ env.REGISTRY }}/${{ github.repository }}/vidora-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  staging:
+    name: Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: staging
+      url: https://api-staging.vidora.example
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_STAGING }}
+        run: |
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::KUBE_CONFIG_STAGING não configurado — veja docs/deploy.md."
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      # Pinned by digest, not by tag: a tag can be moved after approval,
+      # and then production would run something nobody reviewed.
+      - name: Deploy
+        run: |
+          cd deploy/k8s/overlays/staging
+          kubectl kustomize . \
+            | sed "s|IMAGE_PLACEHOLDER|${{ needs.build.outputs.image }}@${{ needs.build.outputs.digest }}|" \
+            | kubectl apply -f -
+          kubectl -n vidora-staging rollout status deployment/vidora-api --timeout=5m
+
+      # The rollout finishing only means the pods started. This asks the
+      # deployed build whether it can actually serve.
+      - name: Smoke test
+        run: ./deploy/smoke-test.sh https://api-staging.vidora.example
+
+  production:
+    name: Production
+    runs-on: ubuntu-latest
+    needs: [build, staging]
+    # Manual approval lives in the environment's protection rules rather
+    # than in this file: a reviewer list in YAML is editable by the same
+    # pull request that wants to skip it.
+    environment:
+      name: production
+      url: https://api.vidora.example
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+        run: |
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::KUBE_CONFIG_PRODUCTION não configurado — veja docs/deploy.md."
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Deploy
+        run: |
+          cd deploy/k8s/overlays/production
+          kubectl kustomize . \
+            | sed "s|IMAGE_PLACEHOLDER|${{ needs.build.outputs.image }}@${{ needs.build.outputs.digest }}|" \
+            | kubectl apply -f -
+          kubectl -n vidora rollout status deployment/vidora-api --timeout=10m
+
+      - name: Smoke test
+        run: ./deploy/smoke-test.sh https://api.vidora.example
+
+      # A failed smoke test means the new pods answer but do not work.
+      # Undoing the rollout is the fastest way back to a version that did.
+      - name: Roll back on failure
+        if: failure()
+        run: |
+          kubectl -n vidora rollout undo deployment/vidora-api
+          kubectl -n vidora rollout status deployment/vidora-api --timeout=10m
+          echo "::error::Smoke test reprovou — rollback aplicado."
