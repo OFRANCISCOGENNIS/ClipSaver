@@ -460,6 +460,48 @@ abstract class AppLocalizations {
   /// **'{state}, {percent} por cento'**
   String downloadsProgressSemantics(String state, int percent);
 
+  /// No description provided for @downloadsPauseItem.
+  ///
+  /// In pt, this message translates to:
+  /// **'Pausar “{title}”'**
+  String downloadsPauseItem(String title);
+
+  /// No description provided for @downloadsResumeItem.
+  ///
+  /// In pt, this message translates to:
+  /// **'Continuar “{title}”'**
+  String downloadsResumeItem(String title);
+
+  /// No description provided for @downloadsRetryItem.
+  ///
+  /// In pt, this message translates to:
+  /// **'Tentar “{title}” de novo'**
+  String downloadsRetryItem(String title);
+
+  /// No description provided for @downloadsCancelItem.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cancelar “{title}”'**
+  String downloadsCancelItem(String title);
+
+  /// No description provided for @downloadsItemSemantics.
+  ///
+  /// In pt, this message translates to:
+  /// **'{title}, {state}'**
+  String downloadsItemSemantics(String title, String state);
+
+  /// No description provided for @downloadsAnnounceDone.
+  ///
+  /// In pt, this message translates to:
+  /// **'“{title}” concluído'**
+  String downloadsAnnounceDone(String title);
+
+  /// No description provided for @downloadsAnnounceFailed.
+  ///
+  /// In pt, this message translates to:
+  /// **'“{title}” falhou'**
+  String downloadsAnnounceFailed(String title);
+
   /// No description provided for @downloadStateQueued.
   ///
   /// In pt, this message translates to:

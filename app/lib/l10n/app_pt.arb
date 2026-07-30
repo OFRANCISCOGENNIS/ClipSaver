@@ -1,11 +1,9 @@
 {
   "@@locale": "pt",
-
   "appName": "Vidora",
   "@appName": {
     "description": "Nome do produto. Não é traduzido em nenhum idioma."
   },
-
   "actionRetry": "Tentar novamente",
   "@actionRetry": {},
   "actionRetryShort": "Tentar de novo",
@@ -28,7 +26,6 @@
   "@valueUnavailable": {
     "description": "Traço usado quando ainda não há valor a mostrar (velocidade, ETA, porcentagem indeterminada)."
   },
-
   "navAnalyze": "Analisar",
   "@navAnalyze": {},
   "navDownloads": "Downloads",
@@ -41,14 +38,17 @@
   "@navConverter": {},
   "navSettings": "Ajustes",
   "@navSettings": {},
-
   "analyzeUrlHint": "Cole um link autorizado",
   "@analyzeUrlHint": {},
   "analyzeAction": "Analisar",
   "@analyzeAction": {},
   "analyzeClipboardPrompt": "Colar link copiado? {url}",
   "@analyzeClipboardPrompt": {
-    "placeholders": { "url": { "type": "String" } }
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
   },
   "analyzeRecents": "Recentes",
   "@analyzeRecents": {},
@@ -62,22 +62,32 @@
   "@analyzeGenericError": {},
   "analyzeQueuedSnack": "“{title}” entrou na fila.",
   "@analyzeQueuedSnack": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "analyzeSeeQueue": "Ver fila",
   "@analyzeSeeQueue": {},
-
   "resultQuality": "Qualidade",
   "@resultQuality": {},
   "resultDownload": "Baixar {quality}",
   "@resultDownload": {
-    "placeholders": { "quality": { "type": "String" } }
+    "placeholders": {
+      "quality": {
+        "type": "String"
+      }
+    }
   },
   "resultLicenseTerms": "Condições da licença: {terms}.",
   "@resultLicenseTerms": {
-    "placeholders": { "terms": { "type": "String" } }
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
   },
-
   "ineligibleTitle": "Download não autorizado",
   "@ineligibleTitle": {},
   "ineligibleTechnicalDetails": "Detalhes técnicos",
@@ -85,19 +95,30 @@
   "ineligibleDetailBody": "Origem analisada: {host}\nBase de autorização encontrada: {basis}\nFormatos liberados: nenhum",
   "@ineligibleDetailBody": {
     "placeholders": {
-      "host": { "type": "String" },
-      "basis": { "type": "String" }
+      "host": {
+        "type": "String"
+      },
+      "basis": {
+        "type": "String"
+      }
     }
   },
-
   "badgeAuthorization": "Autorização: {basis}",
   "@badgeAuthorization": {
     "description": "Rótulo de acessibilidade do selo de autorização.",
-    "placeholders": { "basis": { "type": "String" } }
+    "placeholders": {
+      "basis": {
+        "type": "String"
+      }
+    }
   },
   "badgeUnauthorized": "Download não autorizado: {basis}",
   "@badgeUnauthorized": {
-    "placeholders": { "basis": { "type": "String" } }
+    "placeholders": {
+      "basis": {
+        "type": "String"
+      }
+    }
   },
   "sourceOfficialApi": "Download oficial",
   "@sourceOfficialApi": {},
@@ -109,7 +130,6 @@
   "@sourceDirectFile": {},
   "sourceNone": "Não autorizado",
   "@sourceNone": {},
-
   "licensePublicDomain": "Domínio público",
   "@licensePublicDomain": {},
   "licenseCc0": "Licença CC0",
@@ -130,7 +150,6 @@
   "@licenseRestrictionNonCommercial": {},
   "licenseRestrictionNoDerivatives": "sem obras derivadas",
   "@licenseRestrictionNoDerivatives": {},
-
   "downloadsPauseAll": "Pausar tudo",
   "@downloadsPauseAll": {},
   "downloadsResumeAll": "Retomar tudo",
@@ -145,7 +164,11 @@
   "@downloadsCancelTitle": {},
   "downloadsCancelBody": "O progresso de “{title}” será descartado.",
   "@downloadsCancelBody": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "downloadsCancelKeep": "Manter",
   "@downloadsCancelKeep": {},
@@ -153,16 +176,82 @@
   "@downloadsCancelConfirm": {},
   "downloadsEta": "ETA {value}",
   "@downloadsEta": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "downloadsProgressSemantics": "{state}, {percent} por cento",
   "@downloadsProgressSemantics": {
     "placeholders": {
-      "state": { "type": "String" },
-      "percent": { "type": "int" }
+      "state": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
     }
   },
-
+  "downloadsPauseItem": "Pausar “{title}”",
+  "@downloadsPauseItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsResumeItem": "Continuar “{title}”",
+  "@downloadsResumeItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsRetryItem": "Tentar “{title}” de novo",
+  "@downloadsRetryItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsCancelItem": "Cancelar “{title}”",
+  "@downloadsCancelItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsItemSemantics": "{title}, {state}",
+  "@downloadsItemSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsAnnounceDone": "“{title}” concluído",
+  "@downloadsAnnounceDone": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsAnnounceFailed": "“{title}” falhou",
+  "@downloadsAnnounceFailed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "downloadStateQueued": "Na fila",
   "@downloadStateQueued": {},
   "downloadStateConnecting": "Conectando",
@@ -181,7 +270,6 @@
   "@downloadStateFailed": {},
   "downloadStateCanceled": "Cancelado",
   "@downloadStateCanceled": {},
-
   "libraryViewAsList": "Ver em lista",
   "@libraryViewAsList": {},
   "libraryViewAsGrid": "Ver em grade",
@@ -209,8 +297,12 @@
   "libraryTabWithCount": "{label} ({count})",
   "@libraryTabWithCount": {
     "placeholders": {
-      "label": { "type": "String" },
-      "count": { "type": "int" }
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "libraryFileMissing": "Arquivo não encontrado",
@@ -223,7 +315,6 @@
   "@libraryEmptyTitle": {},
   "libraryEmptyBody": "Downloads concluídos aparecem nesta aba.",
   "@libraryEmptyBody": {},
-
   "searchHint": "Nome, autor, plataforma ou etiqueta",
   "@searchHint": {},
   "searchApproximate": "Nada exato — mostrando resultados parecidos.",
@@ -232,7 +323,11 @@
   "@searchEmpty": {},
   "searchClearFilters": "Limpar ({count})",
   "@searchClearFilters": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "searchKindVideo": "Vídeo",
   "@searchKindVideo": {},
@@ -244,7 +339,6 @@
   "@searchDurationMedium": {},
   "searchDurationLong": "> 20 min",
   "@searchDurationLong": {},
-
   "converterClearFinished": "Limpar concluídas",
   "@converterClearFinished": {},
   "converterEmptyTitle": "Nenhuma conversão",
@@ -261,7 +355,6 @@
   "@conversionStateFailed": {},
   "conversionStateCanceled": "Cancelada",
   "@conversionStateCanceled": {},
-
   "settingsTitle": "Configurações",
   "@settingsTitle": {},
   "settingsSearchHint": "Buscar nas configurações",
@@ -312,19 +405,31 @@
   "@settingsPauseOnLowBattery": {},
   "settingsPauseOnLowBatteryBody": "Abaixo de {percent}%.",
   "@settingsPauseOnLowBatteryBody": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "settingsThumbnailCache": "Cache de miniaturas",
   "@settingsThumbnailCache": {},
   "settingsMegabytes": "{value} MB",
   "@settingsMegabytes": {
-    "placeholders": { "value": { "type": "int" } }
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
   },
   "settingsTrashRetention": "Retenção da lixeira",
   "@settingsTrashRetention": {},
   "settingsDays": "{count, plural, =1{1 dia} other{{count} dias}}",
   "@settingsDays": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "settingsAnalytics": "Enviar dados de uso",
   "@settingsAnalytics": {},
@@ -336,7 +441,6 @@
   "@settingsPolicyBody": {},
   "settingsAbout": "Versão e licenças",
   "@settingsAbout": {},
-
   "themeLight": "Claro",
   "@themeLight": {},
   "themeDark": "Escuro",
@@ -349,7 +453,6 @@
   "@notificationStyleVibrate": {},
   "notificationStyleSilent": "Silencioso",
   "@notificationStyleSilent": {},
-
   "categoryMusic": "Música",
   "@categoryMusic": {},
   "categoryPodcast": "Podcast",
@@ -360,7 +463,6 @@
   "@categoryTutorial": {},
   "categoryUnknown": "Sem categoria",
   "@categoryUnknown": {},
-
   "presetMaxCompatibility": "Compatibilidade máxima",
   "@presetMaxCompatibility": {},
   "presetSmallestSize": "Menor tamanho",
@@ -369,7 +471,6 @@
   "@presetPodcastAudio": {},
   "presetLossless": "Sem perdas",
   "@presetLossless": {},
-
   "onboardingFinish": "Entendi, começar",
   "@onboardingFinish": {},
   "onboardingTitle1": "Só o que é permitido",

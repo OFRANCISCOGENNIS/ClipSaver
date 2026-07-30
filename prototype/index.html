@@ -101,10 +101,23 @@
      isso ambíguo seria dar a entender que o protótipo baixa de verdade. */
   .proto-bar {
     background: var(--warning); color: #1A1206;
-    font-size: 12.5px; font-weight: 650; text-align: center;
+    font-size: 12.5px; font-weight: 650;
     padding: 6px var(--s4);
+    display: flex; flex-wrap: wrap; gap: 4px var(--s3);
+    align-items: center; justify-content: center;
   }
-  .proto-bar a { color: inherit; }
+  .proto-bar a {
+    color: inherit; font-weight: 750;
+    text-underline-offset: 2px; text-decoration-thickness: 2px;
+    white-space: nowrap; border-radius: 4px; padding: 1px 6px;
+    display: inline-flex; align-items: center;
+  }
+  .proto-bar a:focus-visible { outline: 2px solid #1A1206; outline-offset: 1px; }
+  /* No dedo, o alvo precisa de 44px de altura; no mouse, 44px de faixa
+     amarela só rouba espaço da tela. Daí a regra ser por tipo de ponteiro. */
+  @media (pointer: coarse) {
+    .proto-bar a { min-height: 44px; padding: 1px 10px; }
+  }
 
   /* ============ ONBOARDING (seção 2.3) ============ */
   .onb-wrap {
@@ -399,8 +412,14 @@
 </style>
 </head>
 <body>
+<!-- O link para "app/" é relativo de propósito: na raiz publicada ele resolve
+     para /ClipSaver/app/, e o mesmo arquivo servido de outro lugar continua
+     apontando para o vizinho certo. Sem ele, quem chega aqui não descobre
+     que o app compilado existe um caminho ao lado. -->
 <div class="proto-bar" role="status">
-  Protótipo navegável — vereditos simulados neste aparelho, nenhum download real.
+  <span>Protótipo navegável — vereditos simulados neste aparelho, nenhum
+    download real.</span>
+  <a href="app/">Abrir o app de verdade →</a>
 </div>
 
 <!-- ============ ONBOARDING DE CONFORMIDADE (seção 2.3) ============

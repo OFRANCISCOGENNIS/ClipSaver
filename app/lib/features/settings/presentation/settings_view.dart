@@ -267,6 +267,10 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         trailing: DropdownButton<T>(
           value: current,
           underline: const SizedBox.shrink(),
+          // itemHeight fixo (48 por padrão) não acompanha a fonte do
+          // sistema: em 2x o rótulo do item não cabe no item e vaza pelo
+          // rodapé. Nulo faz cada item se dimensionar pelo próprio texto.
+          itemHeight: null,
           onChanged: (value) {
             if (value != null) onSelected(value);
           },

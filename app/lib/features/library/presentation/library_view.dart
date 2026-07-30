@@ -82,7 +82,11 @@ class _LibraryViewState extends ConsumerState<LibraryView> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
+          // A altura reservada tem de acompanhar o chip, que cresce com a
+          // fonte do sistema: 48 fixos estouram por 72px em 3x.
+          preferredSize: Size.fromHeight(
+            MediaQuery.textScalerOf(context).scale(48),
+          ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: VidoraSpacing.lg),
@@ -139,22 +143,73 @@ class _Grid extends StatelessWidget {
   final List<LibraryEntry> entries;
   final LibraryViewModel viewModel;
 
+  /// Largest tile width; the grid fits as many columns as this allows.
+  static const double _maxTileWidth = 220;
+
+  /// Height of the caption under the thumbnail: two title lines, the gap,
+  /// one metadata line, and the fixed padding around them.
+  ///
+  /// Measured with a [TextPainter] rather than estimated from font size ×
+  /// line height. The estimate was 24px short per scale step — close enough
+  /// to look right at 1x and to clip the last line at 3x, which is the only
+  /// scale where it mattered.
+  static double _captionExtent(BuildContext context, double contentWidth) {
+    double heightOf(TextStyle? style, int maxLines) {
+      final painter = TextPainter(
+        // Long enough to fill every allowed line: what is wanted is the
+        // height of a full block, not of this particular title.
+        text: TextSpan(text: 'Ag ' * 60, style: style),
+        maxLines: maxLines,
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(maxWidth: contentWidth);
+      return painter.height;
+    }
+
+    return VidoraSpacing.sm * 2 +
+        heightOf(Theme.of(context).textTheme.bodyMedium, 2) +
+        VidoraSpacing.xs +
+        heightOf(monoStyle(context), 1);
+  }
+
   @override
-  Widget build(BuildContext context) => GridView.builder(
-        padding: kPagePadding,
-        // Virtualized by construction: only visible tiles are built,
-        // which is what keeps 10.000 items at 60/120 FPS (section 12).
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 220,
-          childAspectRatio: 0.78,
-          mainAxisSpacing: VidoraSpacing.md,
-          crossAxisSpacing: VidoraSpacing.md,
-        ),
-        itemCount: entries.length,
-        itemBuilder: (context, index) => RepaintBoundary(
-          key: ValueKey(entries[index].id),
-          child: LibraryCard(entry: entries[index], viewModel: viewModel),
-        ),
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          // A fixed childAspectRatio pins the tile height to its width, so
+          // the caption had nowhere to grow: at 2x the system font the text
+          // overflowed the tile by 9.8px, and at 3x by 214px. Deriving the
+          // extent instead keeps the thumbnail square and lets only the
+          // caption grow — which is the part that actually got bigger.
+          final available = constraints.maxWidth - kPagePadding.horizontal;
+          final columns = (available / (_maxTileWidth + VidoraSpacing.md))
+              .ceil()
+              .clamp(1, 8);
+          final tileWidth =
+              (available - VidoraSpacing.md * (columns - 1)) / columns;
+          // Desconta a margem do Card e o padding interno: o texto tem
+          // menos largura do que o tile.
+          final caption = _captionExtent(
+            context,
+            tileWidth - VidoraSpacing.sm * 2 - 8,
+          );
+
+          return GridView.builder(
+            padding: kPagePadding,
+            // Virtualized by construction: only visible tiles are built,
+            // which is what keeps 10.000 items at 60/120 FPS (section 12).
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: _maxTileWidth,
+              mainAxisExtent: tileWidth + caption,
+              mainAxisSpacing: VidoraSpacing.md,
+              crossAxisSpacing: VidoraSpacing.md,
+            ),
+            itemCount: entries.length,
+            itemBuilder: (context, index) => RepaintBoundary(
+              key: ValueKey(entries[index].id),
+              child: LibraryCard(entry: entries[index], viewModel: viewModel),
+            ),
+          );
+        },
       );
 }
 
@@ -287,12 +342,22 @@ class _EntryMeta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (entry.status == LibraryFileStatus.missing) {
-      return Text(
-        context.l10n.libraryFileMissing,
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: VidoraColors.warning),
+      final aviso = context.l10n.libraryFileMissing;
+      // Sem maxLines este aviso quebrava em cinco linhas com a fonte do
+      // sistema em 3x e empurrava o resto do tile para fora. O texto
+      // completo continua acessível pelo tooltip e pelo leitor de tela —
+      // truncar o que se vê não é o mesmo que esconder a informação.
+      return Tooltip(
+        message: aviso,
+        child: Text(
+          aviso,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: VidoraColors.warning),
+        ),
       );
     }
     final parts = <String>[

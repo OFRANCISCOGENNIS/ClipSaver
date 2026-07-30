@@ -176,9 +176,16 @@ class DownloadTile extends StatelessWidget {
             const SizedBox(height: VidoraSpacing.md),
             _Progress(item: item),
             const SizedBox(height: VidoraSpacing.sm),
+            // Wrap, não Row: com a fonte do sistema em 2x, bytes + velocidade
+            // + ETA numa única linha estouram 156px numa tela de 400. Quem
+            // aumenta a fonte é justamente quem não pode perder o texto.
             DefaultTextStyle(
               style: monoStyle(context),
-              child: Row(
+              child: Wrap(
+                spacing: VidoraSpacing.md,
+                runSpacing: VidoraSpacing.xs,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     total == null
@@ -186,16 +193,14 @@ class DownloadTile extends StatelessWidget {
                         : '${task.bytesDownloaded.formatted} / '
                             '${total.formatted}',
                   ),
-                  const Spacer(),
-                  if (task.state == DownloadState.downloading) ...[
-                    Text(item.rate?.speedLabel ?? l10n.valueUnavailable),
-                    const SizedBox(width: VidoraSpacing.md),
+                  if (task.state == DownloadState.downloading)
                     Text(
-                      l10n.downloadsEta(
+                      '${item.rate?.speedLabel ?? l10n.valueUnavailable}'
+                      '   '
+                      '${l10n.downloadsEta(
                         item.rate?.etaLabel ?? l10n.valueUnavailable,
-                      ),
+                      )}',
                     ),
-                  ],
                 ],
               ),
             ),
@@ -212,34 +217,85 @@ class DownloadTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 if (item.canRetry)
-                  TextButton.icon(
+                  _RowAction(
+                    semanticLabel: l10n.downloadsRetryItem(task.title),
                     onPressed: onRetry,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(l10n.actionRetryShort),
+                    child: TextButton.icon(
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh),
+                      label: Text(l10n.actionRetryShort),
+                    ),
                   ),
                 if (item.canResume)
-                  IconButton(
-                    tooltip: l10n.actionResume,
-                    icon: const Icon(Icons.play_arrow),
+                  _RowAction(
+                    semanticLabel: l10n.downloadsResumeItem(task.title),
                     onPressed: onResume,
+                    child: IconButton(
+                      tooltip: l10n.actionResume,
+                      icon: const Icon(Icons.play_arrow),
+                      onPressed: onResume,
+                    ),
                   ),
                 if (item.canPause)
-                  IconButton(
-                    tooltip: l10n.actionPause,
-                    icon: const Icon(Icons.pause),
+                  _RowAction(
+                    semanticLabel: l10n.downloadsPauseItem(task.title),
                     onPressed: onPause,
+                    child: IconButton(
+                      tooltip: l10n.actionPause,
+                      icon: const Icon(Icons.pause),
+                      onPressed: onPause,
+                    ),
                   ),
                 if (item.canCancel)
-                  IconButton(
-                    tooltip: l10n.actionCancel,
-                    icon: const Icon(Icons.close),
+                  _RowAction(
+                    semanticLabel: l10n.downloadsCancelItem(task.title),
                     onPressed: onCancel,
+                    child: IconButton(
+                      tooltip: l10n.actionCancel,
+                      icon: const Icon(Icons.close),
+                      onPressed: onCancel,
+                    ),
                   ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A row action whose spoken label names the item it acts on.
+///
+/// The tooltip stays short because it is read with the eyes, right next to
+/// the row it belongs to. The semantic label carries the title because it is
+/// heard out of context: in a five-item queue, five identical "Pause" nodes
+/// never say pause *what*.
+///
+/// The action is re-declared here on purpose. Wrapping a button in
+/// `Semantics(excludeSemantics: true)` drops the child's tap action along
+/// with its label, which leaves a node a screen reader can read but cannot
+/// activate — worse than the ambiguity it was meant to fix.
+class _RowAction extends StatelessWidget {
+  const _RowAction({
+    required this.semanticLabel,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final String semanticLabel;
+  final VoidCallback onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      enabled: true,
+      onTap: onPressed,
+      excludeSemantics: true,
+      child: child,
     );
   }
 }
@@ -273,8 +329,10 @@ class _Progress extends StatelessWidget {
             ),
           ),
           const SizedBox(width: VidoraSpacing.md),
+          // A caixa acompanha a escala de texto do sistema: 44px fixos cabem
+          // "100%" no tamanho padrão e cortam a mesma string em 2x.
           SizedBox(
-            width: 44,
+            width: MediaQuery.textScalerOf(context).scale(44),
             child: Text(
               indeterminate ? l10n.valueUnavailable : '$percent%',
               textAlign: TextAlign.right,

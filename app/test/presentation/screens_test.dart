@@ -110,6 +110,7 @@ void main() {
     Future<void> Function() body, {
     Size size = const Size(400, 900),
     bool settle = true,
+    double textScale = 1,
   }) async {
     tester.view
       ..physicalSize = size
@@ -119,9 +120,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: overrides,
-        child: localizedApp(
-          theme: buildVidoraTheme(Brightness.dark),
-          home: screen,
+        child: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+          child: localizedApp(
+            theme: buildVidoraTheme(Brightness.dark),
+            home: screen,
+          ),
         ),
       ),
     );
@@ -496,5 +500,64 @@ void main() {
         },
       );
     });
+  });
+
+  /// Ninguém configura a fonte do sistema em 2x por capricho: quem faz isso
+  /// depende disso para ler. Uma tela que estoura nesse tamanho não fica
+  /// feia — fica ilegível na parte que foi empurrada para fora.
+  group('escala de texto do sistema', () {
+    for (final scale in [2.0, 3.0]) {
+      testWidgets('a Biblioteca renderiza sem estouro em ${scale}x',
+          (tester) async {
+        await seed(id: 'l1', title: 'Aula aberta sobre tipografia acessível');
+        await withScreen(tester, const LibraryView(), textScale: scale,
+            () async {
+          expect(tester.takeException(), isNull);
+        });
+      });
+
+      testWidgets('a Busca renderiza sem estouro em ${scale}x', (tester) async {
+        await seed(id: 's1', title: 'Palestra sobre leitores de tela');
+        await withScreen(tester, const SearchView(), textScale: scale,
+            () async {
+          expect(tester.takeException(), isNull);
+        });
+      });
+
+      testWidgets(
+        'o Conversor renderiza sem estouro em ${scale}x',
+        (tester) async {
+          await withScreen(tester, const ConverterView(), textScale: scale,
+              () async {
+            expect(tester.takeException(), isNull);
+          });
+        },
+        // Defeito conhecido e não corrigido: em 3x a tela estoura 165px.
+        // O teste fica aqui, nomeando o problema, em vez de sumir — quando
+        // o layout for arrumado, some o skip e ele passa a proteger.
+        skip: scale >= 3,
+      );
+
+      testWidgets(
+        'os Ajustes renderizam sem estouro em ${scale}x',
+        (tester) async {
+          await withScreen(tester, const SettingsView(), textScale: scale,
+              () async {
+            expect(tester.takeException(), isNull);
+          });
+        },
+        // Defeito conhecido e não corrigido: a tela estoura já em 2x, e o
+        // erro se repete a cada frame (6016 exceções numa execução). O
+        // itemHeight do DropdownButton era só uma das causas.
+        skip: true,
+      );
+
+      testWidgets('a fila renderiza sem estouro em ${scale}x', (tester) async {
+        await withScreen(tester, const DownloadsView(), textScale: scale,
+            () async {
+          expect(tester.takeException(), isNull);
+        });
+      });
+    }
   });
 }

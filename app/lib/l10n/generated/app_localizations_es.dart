@@ -210,6 +210,41 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String downloadsPauseItem(String title) {
+    return 'Pausar «$title»';
+  }
+
+  @override
+  String downloadsResumeItem(String title) {
+    return 'Reanudar «$title»';
+  }
+
+  @override
+  String downloadsRetryItem(String title) {
+    return 'Reintentar «$title»';
+  }
+
+  @override
+  String downloadsCancelItem(String title) {
+    return 'Cancelar «$title»';
+  }
+
+  @override
+  String downloadsItemSemantics(String title, String state) {
+    return '$title, $state';
+  }
+
+  @override
+  String downloadsAnnounceDone(String title) {
+    return '«$title» completado';
+  }
+
+  @override
+  String downloadsAnnounceFailed(String title) {
+    return '«$title» falló';
+  }
+
+  @override
   String get downloadStateQueued => 'En cola';
 
   @override

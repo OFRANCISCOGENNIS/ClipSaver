@@ -122,12 +122,13 @@ DownloadTask taskFixture({
   String id = 't1',
   String destination = '/downloads/file.mp4',
   String sourceUrl = 'https://files.example.com/file.mp4',
+  String title = 'Arquivo',
   int? totalBytes,
 }) =>
     DownloadTask(
       id: id,
       mediaItemId: 'm1',
-      title: 'Arquivo',
+      title: title,
       format: const MediaFormat(
         id: 'v720',
         kind: MediaKind.video,
