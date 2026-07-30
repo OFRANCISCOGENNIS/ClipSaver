@@ -18,15 +18,26 @@ O Pages serve um único `404.html` para o site inteiro, e as duas aplicações
 usam caminhos reais (`/downloads`, `/library`…). Sem o despachante, um deep
 link ou um F5 numa rota interna cai em 404.
 
-**Não há passo manual.** O `configure-pages` roda com `enablement: true`, o
-que liga o Pages no repositório e fixa a origem em **GitHub Actions** usando
-o `GITHUB_TOKEN`. Num repositório que nunca teve Pages, sem isso o workflow
-monta o site inteiro e só então falha, com um 404 do endpoint de Pages — foi
-exatamente o que aconteceu na primeira execução.
+**Um passo manual, uma vez, e não dá para automatizar:** Settings → Pages →
+Source: **GitHub Actions**.
 
-Se a organização restringir o Pages por política, aí sim a habilitação pelo
-token é recusada e alguém com acesso a Settings → Pages precisa escolher
-**GitHub Actions** como origem uma vez.
+O workflow tenta se virar sozinho — o `configure-pages` roda com
+`enablement: true` —, mas num repositório que nunca teve Pages o
+`GITHUB_TOKEN` esbarra na permissão:
+
+```
+Get Pages site failed.    Error: Not Found
+Create Pages site failed. Error: Resource not accessible by integration
+```
+
+Criar o site do Pages exige permissão de **administração** do repositório, e
+o token do Actions não tem isso por design — `pages: write` autoriza
+publicar num site que existe, não criar um. Então a primeira habilitação é
+de quem administra o repositório, e só a primeira: com o Pages já ligado, o
+`enablement: true` vira um no-op e todo push em `main` publica sozinho.
+
+Depois de ligar, republique sem esperar por um commit novo: Actions →
+Pages → Run workflow.
 
 ### O protótipo
 

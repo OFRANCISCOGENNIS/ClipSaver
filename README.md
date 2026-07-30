@@ -57,9 +57,12 @@ domínio:
 | `https://<owner>.github.io/ClipSaver/` | protótipo navegável — abre e funciona, sem backend |
 | `https://<owner>.github.io/ClipSaver/app/` | o PWA Flutter de verdade, compilado deste repositório |
 
-O próprio workflow liga o Pages no modo **GitHub Actions**
-(`enablement: true`), então não há configuração manual — exceto se uma
-política da organização bloquear a habilitação pelo token.
+Exige uma habilitação única, feita por quem administra o repositório:
+Settings → Pages → Source: **GitHub Actions**. O workflow tenta ligar
+sozinho (`enablement: true`), mas criar um site do Pages pede permissão de
+administração, que o `GITHUB_TOKEN` não tem — detalhes em
+[`docs/deploy.md`](docs/deploy.md). Feito isso, todo push em `main` publica
+sem intervenção.
 
 **O protótipo** (`prototype/index.html`) é um arquivo só, sem dependências,
 com as seis telas e o onboarding de conformidade. Os vereditos de
