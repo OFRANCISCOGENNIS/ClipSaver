@@ -127,4 +127,18 @@ describe('POST /analysis (e2e)', () => {
       .expect(400);
     expect(response.body.errors?.[0]?.path).toBe('url');
   });
+
+  it('an unreachable origin answers 502, not a bare 500', async () => {
+    // The fake throws for any host it was not told about, which is exactly
+    // what a DNS failure looks like to the service.
+    const response = await request(app.getHttpServer())
+      .post('/analysis')
+      .send({ url: 'https://inalcancavel.example.com/video' });
+
+    expect(response.status).toBe(502);
+    expect(response.body.message).toContain('alcançar a origem');
+    // The internal error must not leak: only a stable name reaches the
+    // client, never a driver message carrying hostnames.
+    expect(JSON.stringify(response.body)).not.toContain('unexpected probe');
+  });
 });

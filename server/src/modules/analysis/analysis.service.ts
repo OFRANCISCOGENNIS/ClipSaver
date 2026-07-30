@@ -8,7 +8,7 @@
  * cache port.
  */
 import { createHash } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
 import { EligibilityService } from '../eligibility/domain/eligibility.service.js';
 import type { EligibilityResult } from '../eligibility/domain/types.js';
 import { checkUrlSafety } from '../eligibility/domain/url-safety.js';
@@ -68,7 +68,25 @@ export class AnalysisService {
     }
 
     const url = new URL(rawUrl.trim());
-    const probed = await this.probe.probe(url);
+
+    // A DNS failure, a TLS error or a timeout reaching the origin is an
+    // expected outcome, not a fault of ours: letting it escape produced a
+    // bare 500 "Internal server error", which tells the user nothing and
+    // reads as a Vidora outage. The result is deliberately not cached —
+    // remembering a transient network blip for 24h would keep refusing a
+    // link that started working a minute later.
+    let probed;
+    try {
+      probed = await this.probe.probe(url);
+    } catch (error) {
+      throw new BadGatewayException({
+        message: 'Não foi possível alcançar a origem deste link. Tente novamente.',
+        // The cause is logged, never returned: a driver or DNS error can
+        // carry internal hostnames.
+        cause: error instanceof Error ? error.name : 'unknown',
+      });
+    }
+
     const verdict = this.eligibility.evaluate(toAnalysisContext(url, probed));
 
     const response: AnalysisResponse = {

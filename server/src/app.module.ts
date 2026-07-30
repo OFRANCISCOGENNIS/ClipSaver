@@ -9,6 +9,7 @@ import { ENV, type Env } from './config/env.js';
 import { EnvModule } from './config/env.module.js';
 import { AnalysisModule } from './modules/analysis/analysis.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { BillingModule } from './modules/billing/billing.module.js';
 import { EligibilityModule } from './modules/eligibility/eligibility.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
@@ -25,6 +26,7 @@ import { HealthModule } from './modules/health/health.module.js';
     EligibilityModule,
     AnalysisModule,
     AuthModule,
+    BillingModule,
     HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

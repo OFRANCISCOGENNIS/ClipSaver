@@ -39,19 +39,24 @@ adapters=$(curl -fsS --max-time "$TIMEOUT" "$BASE_URL/eligibility/adapters")
 echo "$adapters" | grep -q 'legalBasis' \
   || fail "o catálogo não expõe a base legal dos adaptadores"
 
-# The product's core promise, checked against the running deployment: a URL
-# behind DRM must be refused. A build that ships with this broken is worse
-# than a build that does not ship.
-echo "→ Recusa de conteúdo protegido"
-status=$(curl -sS --max-time "$TIMEOUT" -o /tmp/smoke-drm.json -w '%{http_code}' \
+# The product's core promise, checked against the running deployment. The
+# probe target is a cloud-metadata address rather than an example host on
+# purpose: it is refused by the SSRF guard before any network call, so the
+# check is deterministic everywhere and does not depend on some external
+# domain resolving. A build that ships with this broken is worse than a
+# build that does not ship.
+echo "→ Recusa de endereço interno (guard de SSRF)"
+status=$(curl -sS --max-time "$TIMEOUT" -o /tmp/smoke-ssrf.json -w '%{http_code}' \
   -X POST "$BASE_URL/analysis" \
   -H 'Content-Type: application/json' \
-  -d '{"url":"https://drm.example.com/filme"}' || true)
+  -d '{"url":"http://169.254.169.254/latest/meta-data"}' || true)
 
 case "$status" in
-  200|202)
-    grep -q '"eligible":false' /tmp/smoke-drm.json \
-      || fail "uma URL com DRM não foi recusada — resposta: $(cat /tmp/smoke-drm.json)"
+  200)
+    grep -q '"eligible":false' /tmp/smoke-ssrf.json \
+      || fail "o endpoint de metadados da nuvem NÃO foi recusado — resposta: $(cat /tmp/smoke-ssrf.json)"
+    grep -q '"source":"none"' /tmp/smoke-ssrf.json \
+      || fail "recusa sem base de autorização 'none' — resposta: $(cat /tmp/smoke-ssrf.json)"
     ;;
   4*)
     # A validation or rate-limit refusal is also a refusal.

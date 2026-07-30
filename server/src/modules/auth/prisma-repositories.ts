@@ -44,14 +44,32 @@ const clients = new Map<string, Promise<PrismaLike>>();
 export function createPrismaClient(databaseUrl: string): Promise<PrismaLike> {
   let client = clients.get(databaseUrl);
   if (!client) {
-    client = import('@prisma/client').then((mod) => {
-      const PrismaClient = (mod as { PrismaClient?: new (args: object) => PrismaLike })
-        .PrismaClient;
-      if (!PrismaClient) {
-        throw new Error('Prisma client não gerado — rode `npx prisma generate`.');
-      }
-      return new PrismaClient({ datasources: { db: { url: databaseUrl } } });
-    });
+    // Prisma 7 takes the connection through a driver adapter rather than a
+    // `datasources` block: the schema no longer carries a URL at all, so
+    // the connection is assembled here, where the environment is known.
+    client = Promise.all([import('@prisma/client'), import('@prisma/adapter-pg')]).then(
+      ([clientModule, adapterModule]) => {
+        // Through `unknown`: the generated client's signatures are far
+        // richer than [PrismaLike], which is a deliberately narrow view of
+        // the handful of calls this module makes. Asserting the narrow
+        // shape is the point — it is what keeps the repositories testable
+        // without a generated client.
+        const PrismaClient = (
+          clientModule as unknown as {
+            PrismaClient?: new (args: object) => PrismaLike;
+          }
+        ).PrismaClient;
+        if (!PrismaClient) {
+          throw new Error('Prisma client não gerado — rode `npx prisma generate`.');
+        }
+        const { PrismaPg } = adapterModule as {
+          PrismaPg: new (config: { connectionString: string }) => unknown;
+        };
+        return new PrismaClient({
+          adapter: new PrismaPg({ connectionString: databaseUrl }),
+        });
+      },
+    );
     clients.set(databaseUrl, client);
   }
   return client;

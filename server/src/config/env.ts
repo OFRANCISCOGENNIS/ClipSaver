@@ -28,6 +28,14 @@ const envSchema = z.object({
   /** Rate limiting window and cap (per IP). */
   THROTTLE_TTL_SECONDS: z.coerce.number().int().positive().default(60),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(30),
+  /**
+   * Billing (section 14). Each store's verifier only registers when its
+   * credential is present; a provider left unset is refused fail-closed.
+   */
+  STRIPE_SECRET_KEY: z.string().min(8).optional(),
+  GOOGLE_PLAY_PACKAGE: z.string().min(3).optional(),
+  GOOGLE_PLAY_ACCESS_TOKEN: z.string().min(8).optional(),
+  APPLE_API_TOKEN: z.string().min(8).optional(),
 });
 
 /** Parsed, validated environment. */
