@@ -57,8 +57,9 @@ domínio:
 | `https://<owner>.github.io/ClipSaver/` | protótipo navegável — abre e funciona, sem backend |
 | `https://<owner>.github.io/ClipSaver/app/` | o PWA Flutter de verdade, compilado deste repositório |
 
-Requer uma configuração única no GitHub: Settings → Pages → Source: **GitHub
-Actions**.
+O próprio workflow liga o Pages no modo **GitHub Actions**
+(`enablement: true`), então não há configuração manual — exceto se uma
+política da organização bloquear a habilitação pelo token.
 
 **O protótipo** (`prototype/index.html`) é um arquivo só, sem dependências,
 com as seis telas e o onboarding de conformidade. Os vereditos de

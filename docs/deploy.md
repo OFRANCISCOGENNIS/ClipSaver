@@ -18,10 +18,15 @@ O Pages serve um único `404.html` para o site inteiro, e as duas aplicações
 usam caminhos reais (`/downloads`, `/library`…). Sem o despachante, um deep
 link ou um F5 numa rota interna cai em 404.
 
-**Configuração única, no GitHub:** Settings → Pages → Source: **GitHub
-Actions**. Sem isso o workflow roda, gera o artefato e falha no passo de
-deploy — o Pages recusa uma publicação para um repositório que não optou
-por esse modo.
+**Não há passo manual.** O `configure-pages` roda com `enablement: true`, o
+que liga o Pages no repositório e fixa a origem em **GitHub Actions** usando
+o `GITHUB_TOKEN`. Num repositório que nunca teve Pages, sem isso o workflow
+monta o site inteiro e só então falha, com um 404 do endpoint de Pages — foi
+exatamente o que aconteceu na primeira execução.
+
+Se a organização restringir o Pages por política, aí sim a habilitação pelo
+token é recusada e alguém com acesso a Settings → Pages precisa escolher
+**GitHub Actions** como origem uma vez.
 
 ### O protótipo
 
