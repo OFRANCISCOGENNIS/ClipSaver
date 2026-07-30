@@ -10,16 +10,17 @@ produto: veja [`docs/compliance.md`](docs/compliance.md) e
 ## Estrutura do monorepo
 
 ```
-app/     Aplicativo Flutter (domínio, infraestrutura e as telas
-         Analyze e Downloads em MVVM + Riverpod)
-server/  Backend NestJS (eligibility + analysis + auth, Prisma, BullMQ)
-docs/    ADRs e documentação de conformidade
+app/       Aplicativo Flutter (domínio, infraestrutura e as seis telas em
+           MVVM + Riverpod), em pt-BR, en e es
+server/    Backend NestJS (eligibility, analysis, auth, billing, health)
+deploy/    Manifestos Kubernetes e o smoke test de pós-deploy
+docs/      ADRs e documentação de conformidade
 ```
 
 ## Quickstart
 
 ```bash
-# App Flutter (Flutter >= 3.24)
+# App Flutter (Flutter >= 3.24; o CI fixa 3.44.8)
 cd app && flutter pub get && dart run build_runner build && flutter test
 
 # Backend: API NestJS (Node >= 20)
@@ -32,11 +33,64 @@ cd server && docker compose up --build   # Swagger em http://localhost:3000/docs
 cd app && flutter run --dart-define=VIDORA_API_BASE_URL=http://localhost:3000
 ```
 
-`flutter analyze` (zero issues) e `npm run typecheck` também devem passar.
+Verificações que o CI impõe e que vale rodar antes de um push:
 
-Para o alvo Web, `tool/fetch_web_assets.sh` baixa os binários de runtime do
-SQLite/WASM antes de `flutter build web` — são artefatos de build, não
+```bash
+cd app    && flutter analyze \
+          && dart format --output=none --set-exit-if-changed lib test tool \
+          && flutter test --coverage && dart run tool/check_coverage.dart
+cd server && npm run typecheck && npm run test:coverage
+```
+
+Para o alvo Web, `app/tool/fetch_web_assets.sh` baixa os binários de runtime
+do SQLite/WASM antes de `flutter build web` — são artefatos de build, não
 código-fonte, por isso não são versionados.
+
+## Site
+
+O PWA é publicado no GitHub Pages pelo workflow `pages.yml`. Requer uma
+configuração única no GitHub — Settings → Pages → Source: **GitHub
+Actions** — e então fica em `https://<owner>.github.io/ClipSaver/`.
+
+Biblioteca, conversor, configurações e onboarding rodam do navegador, porque
+o banco do app é local (SQLite compilado para WASM). A tela Analyze depende
+de API: elegibilidade é decidida no servidor de propósito, então sem backend
+alcançável ela reporta erro de conexão em vez de fingir um veredito. Aponte a
+variável de repositório `VIDORA_API_BASE_URL` para uma API publicada para
+ligar as duas pontas. Detalhes em [`docs/deploy.md`](docs/deploy.md).
+
+## Qualidade
+
+| Métrica | Valor | Mínimo |
+|---|---|---|
+| Testes | 477 (app) + 136 (servidor) | — |
+| Cobertura domínio/aplicação (app) | 97,3% | 95% |
+| Cobertura total (app) | 90,8% | 80% |
+| Cobertura de linhas (servidor) | 98,4% | 95% |
+| Cobertura de branches (servidor) | 94,1% | 90% |
+
+Os gates são por camada, não globais: um número único esconderia uma
+interface bem testada flutuando sobre uma máquina de estados sem teste.
+
+## Pipeline
+
+| Workflow | Quando | O que faz |
+|---|---|---|
+| `ci.yml` | push e PR | lint, testes, gates de cobertura, build da imagem com smoke, render dos manifestos |
+| `pages.yml` | push em `main` que toque `app/` | publica o PWA no GitHub Pages |
+| `release.yml` | tag `v*` | builds das 6 plataformas + checksums |
+| `deploy.yml` | push em `main` que toque `server/` | imagem por digest → staging → smoke → produção com aprovação |
+
+## Documentação
+
+- [`docs/compliance.md`](docs/compliance.md) — o que o app baixa e o que recusa
+- [`docs/deploy.md`](docs/deploy.md) — site, Kubernetes, segredos, rollback
+- [`docs/release.md`](docs/release.md) — builds por plataforma e assinatura
+- ADRs: [autorização](docs/adr/0001-authorization-model.md) ·
+  [motor de download](docs/adr/0002-download-engine-and-scheduler.md) ·
+  [busca e conversão](docs/adr/0003-search-and-conversion.md) ·
+  [plano e IA local](docs/adr/0004-premium-and-local-intelligence.md) ·
+  [CI/CD, release e i18n](docs/adr/0005-cicd-release-and-i18n.md)
 
 ## Estado das fases
 
@@ -47,4 +101,20 @@ código-fonte, por isso não são versionados.
 | 3 | Telas Analyze e Downloads | ✅ concluída |
 | 4 | Library, Search e Converter | ✅ concluída |
 | 5 | Premium, IA, Settings e polimento | ✅ concluída |
-| 6 | CI/CD, builds de release e documentação final | ⏳ |
+| 6 | CI/CD, builds de release e documentação final | ✅ concluída |
+
+### O que fica pendente, explicitamente
+
+- **Assinatura de iOS/macOS**: exige certificado, perfil de provisionamento
+  e notarização. O build de iOS sai sem assinatura — compila, não é
+  publicável. Os passos estão em [`docs/release.md`](docs/release.md).
+- **Deploy da API a um cluster**: manifestos e pipeline são renderizados e
+  validados no CI a cada push, mas nunca foram aplicados a um cluster real
+  (faltam cluster e `KUBE_CONFIG`). A imagem, essa sim, é construída e
+  levantada no CI com os probes respondendo.
+- **Idioma nas mensagens do servidor**: o texto educativo de recusa e as
+  condições de licença vêm do backend e aparecem em português em qualquer
+  locale. O contrato correto é `Accept-Language` na requisição de análise.
+- **Credenciais das lojas**: os três verificadores de recibo estão
+  implementados e testados, mas cada um precisa do seu token injetado pela
+  implantação. Sem configuração, o provedor é recusado — falha fechado.

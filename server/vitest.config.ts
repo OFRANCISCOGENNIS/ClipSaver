@@ -30,6 +30,10 @@ export default defineConfig({
         'src/modules/analysis/redis-analysis-cache.ts',
         'src/modules/auth/prisma-repositories.ts',
         'src/modules/analysis/analysis.module.ts',
+        // Same reason as analysis.module.ts: DI wiring that branches on
+        // env vars, whose real behaviour is which store credentials the
+        // deployment has — not something a unit test can assert.
+        'src/modules/billing/billing.module.ts',
         'src/app.module.ts',
       ],
       thresholds: {
