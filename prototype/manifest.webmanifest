@@ -1,0 +1,17 @@
+{
+  "name": "Vidora — downloads autorizados",
+  "short_name": "Vidora",
+  "description": "Protótipo navegável do Vidora: baixa, organiza e converte mídia apenas quando a plataforma de origem ou o titular dos direitos autoriza.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0D12",
+  "theme_color": "#7C3AED",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

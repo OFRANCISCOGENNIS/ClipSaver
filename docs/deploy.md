@@ -3,17 +3,43 @@
 Como o Vidora vai para produção: o site estático, a API no Kubernetes e os
 segredos que cada um exige.
 
-## O site (PWA)
+## O site
 
-O workflow `.github/workflows/pages.yml` publica o build web no GitHub
-Pages a cada push em `main` que toque `app/`.
+O workflow `.github/workflows/pages.yml` monta e publica duas coisas no
+mesmo domínio a cada push em `main` que toque `app/` ou `prototype/`:
+
+```
+/ClipSaver/            prototype/index.html — protótipo navegável, sem backend
+/ClipSaver/app/        build Flutter web, com --base-href /ClipSaver/app/
+/ClipSaver/404.html    despachante: devolve um deep link para quem é dono dele
+```
+
+O Pages serve um único `404.html` para o site inteiro, e as duas aplicações
+usam caminhos reais (`/downloads`, `/library`…). Sem o despachante, um deep
+link ou um F5 numa rota interna cai em 404.
 
 **Configuração única, no GitHub:** Settings → Pages → Source: **GitHub
 Actions**. Sem isso o workflow roda, gera o artefato e falha no passo de
 deploy — o Pages recusa uma publicação para um repositório que não optou
 por esse modo.
 
-Endereço resultante: `https://<owner>.github.io/ClipSaver/`.
+### O protótipo
+
+`prototype/index.html` é um arquivo só, sem build e sem dependências: tokens
+CSS com tema claro e escuro, as seis telas, o onboarding de conformidade e
+um service worker. Os vereditos vêm de um catálogo local, e a faixa fixa no
+topo diz isso — um protótipo que "baixasse" qualquer link daria a impressão
+errada justamente sobre a parte do produto que mais importa. Ele demonstra
+as quatro bases de autorização e as quatro recusas (DRM, paywall, login de
+terceiros, endereço interno).
+
+Para mexer nele localmente:
+
+```bash
+python3 -m http.server 8099 --directory prototype
+```
+
+### O app
 
 O que funciona num host estático: biblioteca, fila de conversão,
 configurações e o onboarding de conformidade, porque o banco do app é local

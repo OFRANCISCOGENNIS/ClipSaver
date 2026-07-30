@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Vidora — Protótipo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Vidora — gerenciador de downloads autorizados. Protótipo navegável: os vereditos de elegibilidade são simulados localmente.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7C3AED">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vidora">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  /* ============ TOKENS (seção 6 do spec) ============
+     A paleta, a grade de 4px e os raios de 12/24px são os mesmos do app
+     Flutter — este protótipo é a mesma linguagem visual, não uma segunda. */
+  :root {
+    color-scheme: dark;
+    --primary-start: #7C3AED;
+    --primary-end:   #2563EB;
+    --gradient: linear-gradient(135deg, #7C3AED 0%, #2563EB 100%);
+    --success: #22C55E;
+    --error:   #EF4444;
+    --warning: #F59E0B;
+
+    --page:    #0B0D12;
+    --surface: #151823;
+    --raised:  #1C2030;
+    --ink:     #E7E9EE;
+    --ink-2:   #A3A9B8;
+    --ink-3:   #6B7280;
+    --line:    rgba(231,233,238,0.10);
+    --line-strong: rgba(231,233,238,0.18);
+    --accent:  #A78BFA;
+    --shadow:  0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.30);
+
+    /* Grade de 4px */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
+    --s5: 24px; --s6: 32px; --s7: 48px;
+    --r-card: 12px; --r-sheet: 24px; --r-pill: 999px;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:where(:not([data-theme="dark"])) {
+      color-scheme: light;
+      --page: #F8F9FC; --surface: #FFFFFF; --raised: #FFFFFF;
+      --ink: #14161C; --ink-2: #4B5563; --ink-3: #8A91A0;
+      --line: rgba(20,22,28,0.10); --line-strong: rgba(20,22,28,0.16);
+      --accent: #6D28D9;
+      --shadow: 0 1px 2px rgba(20,22,28,.05), 0 8px 24px rgba(20,22,28,.08);
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page: #F8F9FC; --surface: #FFFFFF; --raised: #FFFFFF;
+    --ink: #14161C; --ink-2: #4B5563; --ink-3: #8A91A0;
+    --line: rgba(20,22,28,0.10); --line-strong: rgba(20,22,28,0.16);
+    --accent: #6D28D9;
+    --shadow: 0 1px 2px rgba(20,22,28,.05), 0 8px 24px rgba(20,22,28,.08);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0B0D12; --surface: #151823; --raised: #1C2030;
+    --ink: #E7E9EE; --ink-2: #A3A9B8; --ink-3: #6B7280;
+    --line: rgba(231,233,238,0.10); --line-strong: rgba(231,233,238,0.18);
+    --accent: #A78BFA;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.30);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--page); color: var(--ink);
+    font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-wrap: anywhere;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { background: none; border: none; cursor: pointer; }
+  /* Alvos de toque de 48dp e foco visível: seção 6.4 pede AA. */
+  button, .nav-btn, .chip { min-height: 44px; }
+  :focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+  body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after {
+    transition: none !important; animation: none !important;
+  }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ============ FAIXA DE PROTÓTIPO ============
+     Fica visível de propósito: os vereditos aqui são simulados, e deixar
+     isso ambíguo seria dar a entender que o protótipo baixa de verdade. */
+  .proto-bar {
+    background: var(--warning); color: #1A1206;
+    font-size: 12.5px; font-weight: 650; text-align: center;
+    padding: 6px var(--s4);
+  }
+  .proto-bar a { color: inherit; }
+
+  /* ============ ONBOARDING (seção 2.3) ============ */
+  .onb-wrap {
+    min-height: 100dvh; display: grid; place-items: center;
+    padding: var(--s5); background: var(--page);
+  }
+  body.started .onb-wrap { display: none; }
+  .onb {
+    max-width: 460px; width: 100%; text-align: center;
+  }
+  .onb-icon {
+    width: 88px; height: 88px; margin: 0 auto var(--s5);
+    border-radius: var(--r-sheet); background: var(--gradient);
+    display: grid; place-items: center; font-size: 40px;
+  }
+  .onb h1 { font-size: 26px; line-height: 1.25; letter-spacing: -0.02em; margin: 0 0 var(--s3); }
+  .onb p { color: var(--ink-2); margin: 0 0 var(--s6); }
+  .dots { display: flex; gap: var(--s2); justify-content: center; margin-bottom: var(--s5); }
+  .dots i {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong);
+    transition: background .2s;
+  }
+  .dots i.on { background: var(--primary-start); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+    padding: 0 var(--s5); height: 48px; border-radius: var(--r-card);
+    font-weight: 600; transition: filter .15s, background .15s;
+  }
+  .btn-primary { background: var(--gradient); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+  .btn-ghost { color: var(--ink-2); }
+  .btn-ghost:hover { background: var(--line); color: var(--ink); }
+  .btn-block { width: 100%; }
+
+  /* ============ SHELL ============ */
+  .app { display: none; }
+  body.started .app { display: block; }
+  @media (min-width: 720px) {
+    body.started .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100dvh; }
+  }
+
+  .sidebar { display: none; }
+  @media (min-width: 720px) {
+    .sidebar {
+      display: flex; flex-direction: column; gap: 2px;
+      background: var(--surface); border-right: 1px solid var(--line);
+      padding: var(--s5) var(--s3); position: sticky; top: 0; height: 100dvh;
+    }
+  }
+  .wordmark {
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s2) var(--s3) var(--s5);
+    font-weight: 750; letter-spacing: -0.02em; font-size: 17px;
+  }
+  .wordmark .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--gradient);
+    display: grid; place-items: center; color: #fff; font-size: 15px; font-weight: 800;
+  }
+  .nav-btn {
+    display: flex; align-items: center; gap: var(--s3); width: 100%;
+    padding: 10px var(--s3); border-radius: 9px; color: var(--ink-2);
+    font-weight: 550; text-align: left; transition: background .15s, color .15s;
+  }
+  .nav-btn:hover { background: var(--line); color: var(--ink); }
+  .nav-btn[aria-current="page"] { background: var(--line); color: var(--accent); font-weight: 650; }
+  .nav-btn .ico { width: 20px; text-align: center; flex: none; font-size: 16px; }
+  .nav-badge {
+    margin-left: auto; background: var(--primary-end); color: #fff;
+    font-size: 11px; font-weight: 700; min-width: 20px; height: 20px;
+    border-radius: var(--r-pill); display: grid; place-items: center; padding: 0 6px;
+  }
+  .nav-badge[hidden] { display: none; }
+  .sidebar .spacer { flex: 1; }
+  .plan-chip {
+    border-top: 1px solid var(--line); margin-top: var(--s3);
+    padding: var(--s3); font-size: 13px; color: var(--ink-2);
+    display: flex; align-items: center; gap: var(--s2);
+  }
+
+  .main { min-width: 0; padding-bottom: 84px; }
+  @media (min-width: 720px) { .main { padding-bottom: var(--s5); } }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 5;
+    background: color-mix(in srgb, var(--page) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) var(--s4);
+  }
+  .topbar h1 { font-size: 19px; letter-spacing: -0.02em; margin: 0; }
+  .topbar .spacer { flex: 1; }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 10px; color: var(--ink-2);
+    display: grid; place-items: center; font-size: 17px;
+  }
+  .icon-btn:hover { background: var(--line); color: var(--ink); }
+
+  .page { padding: var(--s5) var(--s4) var(--s6); max-width: 900px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 6;
+    background: var(--surface); border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (min-width: 720px) { .bottom-nav { display: none; } }
+  .bottom-nav button {
+    padding: var(--s2) 0 6px; color: var(--ink-3);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .bottom-nav button .ico { font-size: 18px; }
+  .bottom-nav button span:last-child {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; padding: 0 2px;
+  }
+  @media (max-width: 400px) { .bottom-nav button { font-size: 9.5px; } }
+  .bottom-nav button[aria-current="page"] { color: var(--accent); }
+
+  /* ============ COMPONENTES ============ */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); padding: var(--s4);
+    box-shadow: var(--shadow);
+  }
+  .card + .card { margin-top: var(--s3); }
+  .field {
+    display: flex; align-items: center; gap: var(--s3);
+    background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: var(--r-card); padding: 0 var(--s4); height: 56px;
+  }
+  .field:focus-within { border-color: var(--primary-start); }
+  .field input {
+    flex: 1; min-width: 0; background: none; border: none; outline: none;
+    height: 100%; font-size: 15px;
+  }
+  .field.error { border-color: var(--error); }
+  .hint { color: var(--ink-3); font-size: 13px; margin: var(--s2) 0 0; }
+  .hint.err { color: var(--error); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px var(--s3); border-radius: var(--r-pill);
+    border: 1px solid var(--line-strong); color: var(--ink-2);
+    font-size: 13px; font-weight: 550; min-height: 36px;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--ink); }
+  .chip[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--primary-start) 18%, transparent);
+    border-color: var(--primary-start); color: var(--ink);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .chips.scroll { flex-wrap: nowrap; overflow-x: auto; padding-bottom: var(--s1); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px; border-radius: var(--r-pill);
+    font-size: 12.5px; font-weight: 650; min-height: 0;
+  }
+  .badge.ok  { background: color-mix(in srgb, var(--success) 16%, transparent);
+               border: 1px solid color-mix(in srgb, var(--success) 38%, transparent); }
+  .badge.no  { background: color-mix(in srgb, var(--error) 16%, transparent);
+               border: 1px solid color-mix(in srgb, var(--error) 38%, transparent); }
+  .badge.warn{ background: color-mix(in srgb, var(--warning) 16%, transparent);
+               border: 1px solid color-mix(in srgb, var(--warning) 38%, transparent); }
+
+  .state-chip {
+    padding: 4px 10px; border-radius: var(--r-pill);
+    font-size: 12px; font-weight: 600;
+  }
+
+  .bar { height: 8px; border-radius: var(--r-pill); background: var(--line); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--gradient); transition: width .3s; }
+  .bar.indet > i { width: 35%; animation: slide 1.3s ease-in-out infinite; }
+  @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+
+  .meta { color: var(--ink-2); font-size: 13px; }
+  .row { display: flex; align-items: center; gap: var(--s3); }
+  .row.wrap { flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  h2.section { font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 700; margin: var(--s6) 0 var(--s3); }
+  h2.section:first-child { margin-top: 0; }
+
+  .empty { text-align: center; padding: var(--s7) var(--s4); }
+  .empty .ico { font-size: 42px; opacity: .5; }
+  .empty h3 { margin: var(--s4) 0 var(--s2); font-size: 18px; }
+  .empty p { color: var(--ink-2); margin: 0; }
+
+  .skeleton { background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); padding: var(--s4); }
+  .skeleton .blk { background: var(--line-strong); border-radius: 8px; }
+  .skeleton.pulse { animation: pulse 1.2s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: .45; } to { opacity: .8; } }
+
+  .thumb {
+    width: 112px; height: 72px; flex: none; border-radius: var(--r-card);
+    background: var(--line-strong); display: grid; place-items: center;
+    font-size: 22px; position: relative; overflow: hidden;
+  }
+  /* Vale para o thumbnail da Analyze e para o tile da Biblioteca: prender
+     a regra a um dos dois deixou o badge sem estilo no outro. */
+  .dur {
+    position: absolute; right: 4px; bottom: 4px; background: #000c;
+    color: #fff; font-size: 11px; line-height: 1.4; padding: 1px 6px;
+    border-radius: var(--r-pill);
+  }
+
+  .grid {
+    display: grid; gap: var(--s3);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .tile { background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); overflow: hidden; }
+  .tile .art { aspect-ratio: 16/10; background: var(--line-strong);
+    display: grid; place-items: center; font-size: 26px; position: relative; }
+  .tile .body { padding: var(--s3); }
+  .tile .body strong { display: block; font-weight: 600; font-size: 13.5px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .fav { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px;
+    min-height: 32px; border-radius: 50%; background: #0009; color: #fff;
+    display: grid; place-items: center; font-size: 14px; }
+
+  .list-row { display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+  .list-row:last-child { border-bottom: none; }
+
+  .toggle-row { display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-row .txt { flex: 1; min-width: 0; }
+  .toggle-row .txt small { display: block; color: var(--ink-3); font-size: 12.5px; }
+  .switch {
+    width: 46px; height: 28px; min-height: 28px; flex: none;
+    border-radius: var(--r-pill); background: var(--line-strong);
+    position: relative; transition: background .18s;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 22px; height: 22px; border-radius: 50%; background: #fff;
+    transition: transform .18s;
+  }
+  .switch[aria-checked="true"] { background: var(--primary-start); }
+  .switch[aria-checked="true"]::after { transform: translateX(18px); }
+  select {
+    background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: 9px; padding: 8px var(--s3); min-height: 40px;
+  }
+  input[type=range] { accent-color: var(--primary-start); flex: 1; min-width: 90px; }
+
+  details.tech { margin-top: var(--s3); }
+  details.tech summary { cursor: pointer; font-weight: 600; font-size: 13.5px;
+    color: var(--ink-2); padding: var(--s2) 0; }
+  details.tech pre { margin: var(--s2) 0 0; white-space: pre-wrap;
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: 96px; z-index: 20;
+    /* Um elemento fixo encolhe para caber no conteúdo, e sem isto o texto
+       quebrava numa coluna estreita no meio da tela. */
+    width: max-content; max-width: min(560px, calc(100vw - 32px));
+    background: var(--raised); border: 1px solid var(--line-strong);
+    border-radius: var(--r-card); box-shadow: var(--shadow);
+    padding: var(--s3) var(--s4); display: flex; align-items: center; gap: var(--s3);
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  @media (min-width: 720px) { .toast { bottom: var(--s5); } }
+  .toast.show { opacity: 1; pointer-events: auto; }
+  .toast button { color: var(--accent); font-weight: 650; white-space: nowrap; min-height: 0; }
+
+  .note {
+    background: color-mix(in srgb, var(--warning) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+    border-radius: var(--r-card); padding: var(--s3); font-size: 13px;
+    color: var(--ink-2);
+  }
+  .samples { margin-top: var(--s4); }
+  .samples button {
+    display: block; width: 100%; text-align: left; padding: var(--s3);
+    border-radius: 9px; color: var(--ink-2); font-size: 13.5px;
+    border: 1px dashed var(--line-strong); margin-bottom: var(--s2);
+  }
+  .samples button:hover { border-color: var(--accent); color: var(--ink); }
+  .samples button code { font-family: var(--mono); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="proto-bar" role="status">
+  Protótipo navegável — vereditos simulados neste aparelho, nenhum download real.
+</div>
+
+<!-- ============ ONBOARDING DE CONFORMIDADE (seção 2.3) ============
+     Três páginas, sem juridiquês, e não é possível passar por elas sem ler:
+     o app só aparece depois do "Entendi". -->
+<div class="onb-wrap">
+  <div class="onb">
+    <div class="onb-icon" id="onbIcon" aria-hidden="true">🛡️</div>
+    <h1 id="onbTitle">Só o que é permitido</h1>
+    <p id="onbBody">
+      O Vidora baixa mídia quando a plataforma de origem ou o titular dos
+      direitos autoriza. Todo link é verificado antes de qualquer download
+      começar.
+    </p>
+    <div class="dots" aria-hidden="true">
+      <i class="on"></i><i></i><i></i>
+    </div>
+    <button class="btn btn-primary btn-block" id="onbNext">Continuar</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="app">
+  <nav class="sidebar" aria-label="Navegação principal">
+    <div class="wordmark"><span class="mark" aria-hidden="true">V</span> Vidora</div>
+    <button class="nav-btn" data-go="analyze" aria-current="page">
+      <span class="ico" aria-hidden="true">🔎</span> Analisar</button>
+    <button class="nav-btn" data-go="downloads">
+      <span class="ico" aria-hidden="true">⬇️</span> Downloads
+      <span class="nav-badge" id="navQueue" hidden>0</span></button>
+    <button class="nav-btn" data-go="library">
+      <span class="ico" aria-hidden="true">📚</span> Biblioteca</button>
+    <button class="nav-btn" data-go="search">
+      <span class="ico" aria-hidden="true">🔍</span> Buscar</button>
+    <button class="nav-btn" data-go="converter">
+      <span class="ico" aria-hidden="true">🔁</span> Converter</button>
+    <button class="nav-btn" data-go="settings">
+      <span class="ico" aria-hidden="true">⚙️</span> Ajustes</button>
+    <span class="spacer"></span>
+    <div class="plan-chip"><span aria-hidden="true">🎫</span>
+      <span>Plano <strong id="planName">Free</strong></span></div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1 id="pageTitle">Vidora</h1>
+      <span class="spacer"></span>
+      <button class="icon-btn" id="themeBtn" title="Alternar tema"
+        aria-label="Alternar tema">🌗</button>
+    </header>
+
+    <div class="page">
+
+      <!-- ---------- ANALISAR (seção 7) ---------- -->
+      <section class="view active" id="view-analyze" aria-label="Analisar um link">
+        <div class="field" id="urlField">
+          <span aria-hidden="true">🔗</span>
+          <input id="urlInput" type="url" inputmode="url" autocomplete="off"
+            spellcheck="false" placeholder="Cole um link autorizado"
+            aria-label="Link para analisar">
+          <button class="icon-btn" id="clearUrl" hidden aria-label="Limpar">✕</button>
+        </div>
+        <p class="hint" id="urlHint"></p>
+
+        <button class="btn btn-primary btn-block" id="analyzeBtn" disabled
+          style="margin-top:var(--s4)">Analisar</button>
+
+        <div id="analyzeOut" style="margin-top:var(--s5)"></div>
+
+        <div class="samples" id="samples">
+          <h2 class="section">Links de exemplo</h2>
+          <button data-url="https://open.example.org/aula-aberta">
+            <strong>Licença aberta</strong> — CC-BY declarada nos metadados<br>
+            <code>open.example.org/aula-aberta</code></button>
+          <button data-url="https://api.example.com/talk/42">
+            <strong>Download oficial</strong> — a plataforma oferece o arquivo<br>
+            <code>api.example.com/talk/42</code></button>
+          <button data-url="https://meuperfil.example.net/meu-video">
+            <strong>Conteúdo seu</strong> — titularidade verificada por OAuth<br>
+            <code>meuperfil.example.net/meu-video</code></button>
+          <button data-url="https://files.example.com/palestra.mp4">
+            <strong>Arquivo direto</strong> — mídia pública servida por link<br>
+            <code>files.example.com/palestra.mp4</code></button>
+          <button data-url="https://files.example.com/corrompido.mp4">
+            <strong>Integridade reprovada</strong> — SHA-256 não confere, o
+            parcial é descartado<br>
+            <code>files.example.com/corrompido.mp4</code></button>
+          <button data-url="https://drm.example.com/filme">
+            <strong>Recusado: DRM</strong> — protegido, nunca contornado<br>
+            <code>drm.example.com/filme</code></button>
+          <button data-url="https://paywall.example.com/serie">
+            <strong>Recusado: paywall</strong> — assinatura na origem<br>
+            <code>paywall.example.com/serie</code></button>
+          <button data-url="http://169.254.169.254/latest/meta-data">
+            <strong>Recusado: endereço interno</strong> — guard de SSRF<br>
+            <code>169.254.169.254</code></button>
+        </div>
+      </section>
+
+      <!-- ---------- DOWNLOADS (seção 8) ---------- -->
+      <section class="view" id="view-downloads" aria-label="Fila de downloads">
+        <div class="row wrap" id="queueActions" style="margin-bottom:var(--s4)" hidden>
+          <button class="chip" id="pauseAll">⏸ Pausar tudo</button>
+          <button class="chip" id="resumeAll">▶ Retomar tudo</button>
+          <button class="chip" id="clearDone">🧹 Limpar concluídos</button>
+        </div>
+        <div id="queueOut"></div>
+      </section>
+
+      <!-- ---------- BIBLIOTECA (seção 9) ---------- -->
+      <section class="view" id="view-library" aria-label="Biblioteca">
+        <div class="chips scroll" id="libTabs" role="tablist"></div>
+        <div class="row" style="margin:var(--s4) 0">
+          <select id="libSort" aria-label="Ordenar por">
+            <option value="downloadedAt">Data do download</option>
+            <option value="name">Nome</option>
+            <option value="size">Tamanho</option>
+            <option value="duration">Duração</option>
+            <option value="platform">Plataforma</option>
+          </select>
+          <span class="spacer"></span>
+          <button class="chip" id="libView">▦ Grade</button>
+        </div>
+        <div id="libOut"></div>
+      </section>
+
+      <!-- ---------- BUSCAR (seção 10) ---------- -->
+      <section class="view" id="view-search" aria-label="Buscar na biblioteca">
+        <div class="field">
+          <span aria-hidden="true">🔍</span>
+          <input id="searchInput" type="search" autocomplete="off"
+            placeholder="Nome, autor, plataforma ou etiqueta"
+            aria-label="Buscar na biblioteca">
+        </div>
+        <div class="chips scroll" id="searchFilters" style="margin:var(--s4) 0"></div>
+        <div id="searchOut"></div>
+      </section>
+
+      <!-- ---------- CONVERTER (seção 11) ---------- -->
+      <section class="view" id="view-converter" aria-label="Conversor">
+        <h2 class="section">Presets</h2>
+        <div class="chips" id="presetChips"></div>
+        <p class="hint">Escolha um item da biblioteca; o arquivo original é
+          sempre preservado.</p>
+        <div id="convPick" style="margin-top:var(--s4)"></div>
+        <h2 class="section">Fila de conversão</h2>
+        <div id="convOut"></div>
+      </section>
+
+      <!-- ---------- AJUSTES (seção 16) ---------- -->
+      <section class="view" id="view-settings" aria-label="Configurações">
+        <div class="field">
+          <span aria-hidden="true">🔍</span>
+          <input id="setSearch" type="search" autocomplete="off"
+            placeholder="Buscar nas configurações"
+            aria-label="Buscar nas configurações">
+        </div>
+        <div id="setOut" style="margin-top:var(--s4)"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Navegação inferior">
+    <button data-go="analyze" aria-current="page">
+      <span class="ico" aria-hidden="true">🔎</span><span>Analisar</span></button>
+    <button data-go="downloads">
+      <span class="ico" aria-hidden="true">⬇️</span><span>Downloads</span></button>
+    <button data-go="library">
+      <span class="ico" aria-hidden="true">📚</span><span>Biblioteca</span></button>
+    <button data-go="search">
+      <span class="ico" aria-hidden="true">🔍</span><span>Buscar</span></button>
+    <button data-go="converter">
+      <span class="ico" aria-hidden="true">🔁</span><span>Converter</span></button>
+    <button data-go="settings">
+      <span class="ico" aria-hidden="true">⚙️</span><span>Ajustes</span></button>
+  </nav>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span id="toastMsg"></span>
+  <button id="toastAct" hidden></button>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   Vidora — protótipo navegável.
+
+   O que este arquivo NÃO faz, de propósito: nenhuma requisição de rede,
+   nenhum download real. O veredito de elegibilidade é resolvido contra um
+   catálogo local de exemplos, porque a decisão de verdade é do servidor —
+   o cliente nunca é a autoridade sobre o que pode ser baixado (seção 2.2).
+   Um protótipo que "baixasse" qualquer link daria a impressão errada sobre
+   exatamente a parte do produto que mais importa.
+   ========================================================================== */
+
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+/* ---------- Persistência ---------- */
+const KEY = "vidora.proto.v1";
+const defaults = {
+  onboarded: false,
+  theme: "auto",
+  reduceMotion: false,
+  clipboard: true,
+  concurrency: 2,
+  wifiOnly: false,
+  resumeOnReconnect: true,
+  notifyDone: true,
+  notifyError: true,
+  notifyStyle: "sound",
+  dailyDigest: false,
+  batterySaver: false,
+  pauseLowBattery: true,
+  thumbCacheMb: 200,
+  trashDays: 7,
+  analytics: false,       // opt-in, nunca opt-out (LGPD/GDPR)
+  library: [],
+  libView: "grid",
+  libTab: "videos",
+  libSort: "downloadedAt",
+};
+let S = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+  } catch {
+    // Dado corrompido cai nos padrões em vez de travar o protótipo.
+    return { ...defaults };
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { /* modo privado */ }
+}
+
+/* Estado volátil: filas não sobrevivem a um reload, como no app — um
+   FFmpeg abortado não tem saída parcial aproveitável, e um download
+   interrompido volta como pausado, não como "baixando". */
+const queue = [];        // downloads
+const conversions = [];  // conversões
+let seq = 0;
+const uid = (p) => `${p}${++seq}`;
+
+/* ---------- Formatação ---------- */
+const KIB = 1024;
+function fmtBytes(n) {
+  if (n < KIB) return `${n} B`;
+  if (n < KIB ** 2) return `${(n / KIB).toFixed(1)} KB`;
+  if (n < KIB ** 3) return `${(n / KIB ** 2).toFixed(1)} MB`;
+  return `${(n / KIB ** 3).toFixed(2)} GB`;
+}
+function fmtDur(sec) {
+  if (sec == null) return "—";
+  const s = String(Math.floor(sec % 60)).padStart(2, "0");
+  const m = Math.floor(sec / 60) % 60;
+  const h = Math.floor(sec / 3600);
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+}
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString("pt-BR",
+    { day: "2-digit", month: "short", year: "numeric" });
+}
+const esc = (v) => String(v).replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(msg, actionLabel, action) {
+  $("#toastMsg").textContent = msg;
+  const btn = $("#toastAct");
+  btn.hidden = !actionLabel;
+  if (actionLabel) {
+    btn.textContent = actionLabel;
+    btn.onclick = () => { hideToast(); action?.(); };
+  }
+  $("#toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 5000);
+}
+function hideToast() { $("#toast").classList.remove("show"); }
+
+/* ==========================================================================
+   ONBOARDING (seção 2.3) — três páginas, e o app só aparece depois.
+   ========================================================================== */
+const onboarding = [
+  { icon: "🛡️", title: "Só o que é permitido",
+    body: "O Vidora baixa mídia quando a plataforma de origem ou o titular dos direitos autoriza. Todo link é verificado antes de qualquer download começar." },
+  { icon: "🎖️", title: "Quatro formas de autorização",
+    body: "Download oficial da plataforma, licença aberta (como Creative Commons), conteúdo do seu próprio perfil, ou arquivo público de acesso direto. Você vê qual delas valeu em cada item." },
+  { icon: "🚫", title: "O que o app não faz",
+    body: "Nada de contornar DRM, paywall ou login de terceiros. Quando um link não pode ser baixado, explicamos o motivo e, quando existe, o caminho legítimo." },
+];
+let onbPage = 0;
+function renderOnb() {
+  const p = onboarding[onbPage];
+  $("#onbIcon").textContent = p.icon;
+  $("#onbTitle").textContent = p.title;
+  $("#onbBody").textContent = p.body;
+  $$(".dots i").forEach((d, i) => d.classList.toggle("on", i === onbPage));
+  $("#onbNext").textContent =
+    onbPage === onboarding.length - 1 ? "Entendi, começar" : "Continuar";
+}
+$("#onbNext").addEventListener("click", () => {
+  if (onbPage < onboarding.length - 1) { onbPage++; renderOnb(); return; }
+  S.onboarded = true; save();
+  document.body.classList.add("started");
+  go("analyze");
+});
+
+/* ==========================================================================
+   NAVEGAÇÃO
+   ========================================================================== */
+const titles = {
+  analyze: "Vidora", downloads: "Downloads", library: "Biblioteca",
+  search: "Buscar", converter: "Conversor", settings: "Configurações",
+};
+let current = "analyze";
+function go(view) {
+  current = view;
+  $$(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
+  $$("[data-go]").forEach((b) => {
+    if (b.dataset.go === view) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  $("#pageTitle").textContent = titles[view];
+  window.scrollTo({ top: 0, behavior: "instant" });
+  if (view === "library") renderLibrary();
+  if (view === "search") renderSearch();
+  if (view === "converter") renderConverter();
+  if (view === "settings") renderSettings();
+  if (view === "downloads") renderQueue();
+}
+$$("[data-go]").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
+
+/* ==========================================================================
+   TEMA
+   ========================================================================== */
+function applyTheme() {
+  const root = document.documentElement;
+  if (S.theme === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", S.theme);
+  document.body.classList.toggle("reduce-motion", S.reduceMotion || S.batterySaver);
+}
+$("#themeBtn").addEventListener("click", () => {
+  S.theme = S.theme === "dark" ? "light" : S.theme === "light" ? "auto" : "dark";
+  save(); applyTheme();
+  toast(`Tema: ${{ auto: "automático", light: "claro", dark: "escuro" }[S.theme]}`);
+});
+
+/* ==========================================================================
+   ANÁLISE — validação local + catálogo de vereditos simulados
+   ========================================================================== */
+
+/* Espelha o value object MediaUrl do app: o cliente recusa o que já sabe
+   ser impossível antes de gastar uma chamada. É defesa em profundidade,
+   não a decisão — essa é do servidor. */
+function validateUrl(raw) {
+  const value = raw.trim();
+  if (!value) return "Informe um link.";
+  let u;
+  try { u = new URL(value); } catch { return "Este texto não parece ser um link válido."; }
+  if (!["http:", "https:"].includes(u.protocol)) return "Apenas links http(s) são suportados.";
+  if (u.username || u.password) return "Links com credenciais embutidas não são aceitos.";
+  const h = u.hostname.toLowerCase();
+  if (h === "localhost" || h.endsWith(".local") || h.endsWith(".internal")) {
+    return "Links para endereços locais não são aceitos.";
+  }
+  const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    const priv =
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||      // CGNAT
+      (a === 169 && b === 254) ||                // link-local / metadados
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168);
+    if (priv) return "Links para endereços locais não são aceitos.";
+  }
+  if (h === "::1" || h.startsWith("[::1") || h.startsWith("fc") || h.startsWith("fd")) {
+    return "Links para endereços locais não são aceitos.";
+  }
+  return null;
+}
+
+/* O catálogo. Qualquer link fora dele é recusado por ausência de base de
+   autorização — falhar fechado é a regra, não a exceção. */
+const catalogue = [
+  { match: "open.example.org", eligible: true, source: "openLicense",
+    license: "Licença CC-BY", restrictions: ["atribuição obrigatória"],
+    title: "Aula aberta: introdução ao cálculo", author: "Prof. Silva",
+    platform: "exemplo.org", duration: 2145,
+    reason: "O titular declarou uma licença aberta (CC-BY) nos metadados do conteúdo.",
+    formats: [
+      { id: "v1080", label: "1080p", container: "mp4", bytes: 486539264 },
+      { id: "v720",  label: "720p",  container: "mp4", bytes: 251658240 },
+      { id: "a128",  label: "128 kbps", container: "mp3", bytes: 34340864 },
+    ] },
+  { match: "api.example.com", eligible: true, source: "officialApi",
+    title: "Palestra: arquitetura em camadas", author: "Conferência Exemplo",
+    platform: "example.com", duration: 3380,
+    reason: "A plataforma de origem oferece o download oficialmente para este item.",
+    formats: [
+      { id: "v1080", label: "1080p", container: "mp4", bytes: 734003200 },
+      { id: "v480",  label: "480p",  container: "mp4", bytes: 157286400 },
+    ] },
+  { match: "meuperfil.example.net", eligible: true, source: "userOwned",
+    title: "Meu vídeo de 12 de julho", author: "Você",
+    platform: "example.net", duration: 412,
+    reason: "Você é o dono deste conteúdo na plataforma de origem (verificado via OAuth).",
+    formats: [{ id: "orig", label: "Original", container: "mp4", bytes: 98566144 }] },
+  { match: "files.example.com/palestra", eligible: true, source: "directFile",
+    title: "palestra.mp4", platform: "files.example.com", duration: 1870,
+    reason: "A URL aponta diretamente para um arquivo de mídia servido publicamente.",
+    /* Sem Content-Length: a barra fica indeterminada em vez de inventar
+       uma porcentagem (seção 8.2). */
+    formats: [{ id: "orig", label: "Original", container: "mp4", bytes: null }] },
+  { match: "files.example.com/corrompido", eligible: true, source: "directFile",
+    title: "corrompido.mp4", platform: "files.example.com", duration: 300,
+    reason: "A URL aponta diretamente para um arquivo de mídia servido publicamente.",
+    corrupt: true,   // reprova a verificação de integridade (seção 8.3)
+    formats: [{ id: "orig", label: "Original", container: "mp4", bytes: 41943040 }] },
+  { match: "drm.example.com", eligible: false, source: "none",
+    reason: "Este conteúdo é protegido por DRM e não pode ser baixado. O Vidora não contorna proteções técnicas.",
+    path: "Você pode assisti-lo pelo aplicativo oficial da plataforma." },
+  { match: "paywall.example.com", eligible: false, source: "none",
+    reason: "Este conteúdo está atrás de um paywall e não pode ser baixado.",
+    path: "Assine o serviço de origem para acessá-lo." },
+  { match: "privado.example.com", eligible: false, source: "none",
+    reason: "Este conteúdo exige login na plataforma de origem e não pertence a você.",
+    path: "Você pode salvá-lo na sua conta da plataforma de origem." },
+];
+
+const sourceLabel = {
+  officialApi: "Download oficial", openLicense: "Licença aberta",
+  userOwned: "Seu conteúdo", directFile: "Arquivo direto", none: "Não autorizado",
+};
+const sourceIcon = {
+  officialApi: "✅", openLicense: "🌐", userOwned: "👤",
+  directFile: "🔗", none: "🚫",
+};
+
+function analyseLocally(url) {
+  const hit = catalogue.find((c) => url.includes(c.match));
+  if (hit) return { ...hit, url };
+  return {
+    url, eligible: false, source: "none",
+    reason: "Este conteúdo não permite download: a plataforma não oferece essa opção e não há licença aberta declarada.",
+    path: "Você pode salvá-lo na sua conta da plataforma de origem, quando a plataforma oferecer isso.",
+  };
+}
+
+let selectedFormat = null;
+let lastVerdict = null;
+
+const urlInput = $("#urlInput");
+urlInput.addEventListener("input", () => {
+  const raw = urlInput.value;
+  $("#clearUrl").hidden = raw.length === 0;
+  const err = raw.trim() ? validateUrl(raw) : null;
+  $("#urlField").classList.toggle("error", !!err);
+  $("#urlHint").textContent = err || "";
+  $("#urlHint").className = "hint" + (err ? " err" : "");
+  $("#analyzeBtn").disabled = !!err || !raw.trim();
+});
+$("#clearUrl").addEventListener("click", () => {
+  urlInput.value = ""; urlInput.dispatchEvent(new Event("input"));
+  $("#analyzeOut").innerHTML = ""; $("#samples").hidden = false; urlInput.focus();
+});
+urlInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !$("#analyzeBtn").disabled) runAnalysis();
+});
+$("#analyzeBtn").addEventListener("click", runAnalysis);
+$$("#samples button").forEach((b) => b.addEventListener("click", () => {
+  urlInput.value = b.dataset.url;
+  urlInput.dispatchEvent(new Event("input"));
+  runAnalysis();
+}));
+
+function runAnalysis() {
+  const url = urlInput.value.trim();
+  const err = validateUrl(url);
+  const out = $("#analyzeOut");
+  $("#samples").hidden = true;
+
+  if (err) {
+    // O guard local recusa antes de qualquer análise: é a mesma recusa que
+    // o servidor daria, só mais cedo.
+    lastVerdict = null;
+    out.innerHTML = refusalCard({
+      url, source: "none",
+      reason: "Este link não pode ser analisado por segurança. Verifique o endereço.",
+      path: null, guard: err,
+    });
+    return;
+  }
+
+  // Skeleton em vez de spinner: a seção 6.2 proíbe spinner para conteúdo
+  // estruturado, e o esqueleto tem a forma do card que vai chegar.
+  out.innerHTML = `
+    <div class="skeleton pulse" aria-label="Analisando o link" aria-live="polite">
+      <div class="row" style="align-items:flex-start">
+        <div class="blk" style="width:112px;height:72px"></div>
+        <div style="flex:1">
+          <div class="blk" style="height:20px"></div>
+          <div class="blk" style="height:14px;width:160px;margin-top:8px"></div>
+          <div class="blk" style="height:26px;width:120px;margin-top:12px"></div>
+        </div>
+      </div>
+    </div>`;
+
+  const delay = S.reduceMotion || S.batterySaver ? 120 : 620;
+  setTimeout(() => {
+    const v = analyseLocally(url);
+    lastVerdict = v;
+    selectedFormat = v.eligible ? v.formats[0].id : null;
+    out.innerHTML = v.eligible ? resultCard(v) : refusalCard(v);
+    wireResult();
+  }, delay);
+}
+
+function badge(source, license) {
+  const label = source === "openLicense" && license ? license : sourceLabel[source];
+  const kind = source === "none" ? "no" : "ok";
+  const aria = source === "none"
+    ? `Download não autorizado: ${label}` : `Autorização: ${label}`;
+  return `<span class="badge ${kind}" role="img" aria-label="${esc(aria)}">
+    <span aria-hidden="true">${sourceIcon[source]}</span> ${esc(label)}</span>`;
+}
+
+function resultCard(v) {
+  const f = v.formats.find((x) => x.id === selectedFormat) || v.formats[0];
+  return `
+  <div class="card">
+    <div class="row" style="align-items:flex-start">
+      <div class="thumb" aria-hidden="true">🎬
+        ${v.duration ? `<span class="dur mono">${fmtDur(v.duration)}</span>` : ""}
+      </div>
+      <div style="flex:1;min-width:0">
+        <strong style="font-size:17px;line-height:1.3">${esc(v.title)}</strong>
+        ${v.author ? `<div class="meta">${esc(v.author)}</div>` : ""}
+        <div style="margin-top:var(--s2)">${badge(v.source, v.license)}</div>
+      </div>
+    </div>
+
+    <h2 class="section">Qualidade</h2>
+    <div class="chips" id="fmtChips">
+      ${v.formats.map((x) => `
+        <button class="chip" data-fmt="${x.id}"
+          aria-pressed="${x.id === selectedFormat}">
+          ${esc(x.label)} · ${x.container.toUpperCase()}
+          ${x.bytes ? ` · ${fmtBytes(x.bytes)}` : ""}
+        </button>`).join("")}
+    </div>
+
+    ${v.restrictions?.length ? `
+      <div class="note" style="margin-top:var(--s4)">
+        <strong>Condições da licença:</strong> ${esc(v.restrictions.join(", "))}.
+      </div>` : ""}
+
+    <button class="btn btn-primary btn-block" id="dlBtn"
+      style="margin-top:var(--s4)">⬇ Baixar ${esc(f.label)}</button>
+
+    <details class="tech">
+      <summary>Detalhes técnicos</summary>
+      <pre>Origem analisada: ${esc(new URL(v.url).host)}
+Base de autorização: ${esc(sourceLabel[v.source])}
+Motivo: ${esc(v.reason)}
+Formatos liberados: ${v.formats.length}</pre>
+    </details>
+  </div>`;
+}
+
+function refusalCard(v) {
+  return `
+  <div class="card">
+    <div class="row">
+      <span aria-hidden="true" style="font-size:20px">🛡️</span>
+      <strong style="font-size:17px">Download não autorizado</strong>
+    </div>
+    <p style="margin:var(--s3) 0 0">${esc(v.reason)}</p>
+    ${v.path ? `<p class="meta" style="margin:var(--s3) 0 0">
+      <strong>Caminho legítimo:</strong> ${esc(v.path)}</p>` : ""}
+    <div style="margin-top:var(--s4)">${badge("none")}</div>
+    <details class="tech">
+      <summary>Detalhes técnicos</summary>
+      <pre>Origem analisada: ${esc(safeHost(v.url))}
+Base de autorização encontrada: ${esc(sourceLabel.none)}
+${v.guard ? `Recusado pelo guard local: ${esc(v.guard)}\n` : ""}Formatos liberados: nenhum</pre>
+    </details>
+  </div>`;
+}
+function safeHost(url) {
+  try { return new URL(url).host; } catch { return url; }
+}
+
+function wireResult() {
+  $$("#fmtChips [data-fmt]").forEach((b) => b.addEventListener("click", () => {
+    selectedFormat = b.dataset.fmt;
+    $("#analyzeOut").innerHTML = resultCard(lastVerdict);
+    wireResult();
+  }));
+  $("#dlBtn")?.addEventListener("click", () => {
+    const v = lastVerdict;
+    const f = v.formats.find((x) => x.id === selectedFormat) || v.formats[0];
+    enqueue(v, f);
+    toast(`“${v.title}” entrou na fila.`, "Ver fila", () => go("downloads"));
+  });
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   FILA DE DOWNLOADS (seções 8.1 e 8.2)
+
+   A máquina de estados é a mesma do app, declarada como dado. Uma transição
+   ilegal é recusada em vez de aplicada: é o que impede "retomar" um
+   download já concluído de reabrir uma conexão.
+   ========================================================================== */
+const TRANSITIONS = {
+  queued:      ["connecting", "canceled"],
+  connecting:  ["downloading", "failed", "canceled"],
+  downloading: ["paused", "completed", "failed", "canceled"],
+  paused:      ["downloading", "canceled"],
+  completed:   ["verifying", "canceled"],
+  verifying:   ["done", "failed", "canceled"],
+  failed:      ["queued"],
+  done:        [],
+  canceled:    [],
+};
+const STATE_LABEL = {
+  queued: "Na fila", connecting: "Conectando", downloading: "Baixando",
+  paused: "Pausado", completed: "Concluindo", verifying: "Verificando integridade",
+  done: "Concluído", failed: "Falhou", canceled: "Cancelado",
+};
+const STATE_COLOR = {
+  done: "var(--success)", failed: "var(--error)",
+  paused: "var(--warning)", canceled: "var(--warning)",
+};
+const ACTIVE = new Set(["queued", "connecting", "downloading", "paused", "completed", "verifying"]);
+const MAX_RETRIES = 5;
+
+function transition(task, to) {
+  if (!TRANSITIONS[task.state].includes(to)) {
+    // Não lança: o protótipo prefere ignorar o pedido impossível a quebrar.
+    console.warn(`transição recusada: ${task.state} → ${to}`);
+    return false;
+  }
+  task.state = to;
+  return true;
+}
+
+function effectiveConcurrency() {
+  const asked = Math.min(Math.max(S.concurrency, 1), 8);
+  if (!S.batterySaver) return asked;
+  // Economia de bateria reduz pela metade em vez de parar: o usuário pediu
+  // para gastar menos energia, não para deixar de trabalhar.
+  return Math.max(1, Math.floor(asked / 2));
+}
+
+function enqueue(verdict, format) {
+  queue.unshift({
+    id: uid("t"),
+    title: verdict.title,
+    host: safeHost(verdict.url),
+    source: verdict.source,
+    license: verdict.license,
+    platform: verdict.platform,
+    duration: verdict.duration,
+    format,
+    total: format.bytes,          // null = sem Content-Length
+    got: 0,
+    state: "queued",
+    retries: 0,
+    speed: 0,
+    ticks: 0,
+    corrupt: !!verdict.corrupt,
+    failure: null,
+  });
+  updateBadge();
+  if (current === "downloads") renderQueue();
+}
+
+/* Um tick = 250 ms. A velocidade por item é fixa e derivada do id, não
+   sorteada: um protótipo que muda de comportamento a cada abertura é
+   impossível de demonstrar duas vezes igual. */
+const TICK = 250;
+const TICKS_TO_FINISH = 32;   // ~8 s por item
+function scheduler() {
+  const running = queue.filter((t) => t.state === "connecting" || t.state === "downloading");
+  const limit = effectiveConcurrency();
+
+  for (const t of queue) {
+    if (running.length >= limit) break;
+    if (t.state === "queued") { transition(t, "connecting"); running.push(t); }
+  }
+
+  let dirty = false;
+  for (const t of queue) {
+    switch (t.state) {
+      case "connecting":
+        t.ticks++;
+        if (t.ticks >= 2) { t.ticks = 0; transition(t, "downloading"); }
+        dirty = true;
+        break;
+      case "downloading": {
+        /* Um item conclui em ~TICKS_TO_FINISH ticks, seja ele de 30 MB ou
+           de 700 MB: uma demonstração que levasse treze minutos para
+           mostrar o estado "concluído" não demonstraria nada. A velocidade
+           exibida é derivada do avanço real, não inventada à parte — assim
+           barra, taxa e ETA continuam contando a mesma história. */
+        const jitter = 1 + ((Number(t.id.slice(1)) % 5) - 2) * 0.06;
+        if (t.total == null) {
+          // Sem Content-Length não há porcentagem honesta: avança por tempo
+          // e a barra fica indeterminada.
+          const gain = Math.round(1_400_000 * jitter * TICK / 1000);
+          t.got += gain;
+          t.speed = Math.round(gain * 1000 / TICK);
+          t.ticks++;
+          if (t.ticks >= TICKS_TO_FINISH) { t.ticks = 0; transition(t, "completed"); }
+        } else {
+          const gain = Math.max(1, Math.round(t.total / TICKS_TO_FINISH * jitter));
+          t.got = Math.min(t.total, t.got + gain);
+          t.speed = Math.round(gain * 1000 / TICK);
+          t.ticks++;
+          if (t.got >= t.total) { t.ticks = 0; transition(t, "completed"); }
+        }
+        dirty = true;
+        break;
+      }
+      case "completed":
+        transition(t, "verifying");
+        dirty = true;
+        break;
+      case "verifying":
+        t.ticks++;
+        if (t.ticks >= 3) {
+          t.ticks = 0;
+          if (t.corrupt) {
+            // Integridade reprovada: o arquivo parcial é descartado, e é
+            // por isso que isto é uma falha e não um "concluído com aviso".
+            transition(t, "failed");
+            t.failure = "Verificação de integridade falhou (SHA-256 não confere).";
+            if (S.notifyError) toast(`Falhou: ${t.title}`);
+          } else {
+            transition(t, "done");
+            addToLibrary(t);
+            if (S.notifyDone) toast(`Concluído: ${t.title}`);
+          }
+        }
+        dirty = true;
+        break;
+      default: break;
+    }
+  }
+  if (dirty) { updateBadge(); if (current === "downloads") renderQueue(); }
+}
+setInterval(scheduler, TICK);
+
+function updateBadge() {
+  const n = queue.filter((t) => ACTIVE.has(t.state)).length;
+  const el = $("#navQueue");
+  el.hidden = n === 0;
+  el.textContent = String(n);
+}
+
+function addToLibrary(t) {
+  S.library.unshift({
+    id: uid("e"),
+    title: t.title,
+    kind: t.format.container === "mp3" || t.format.container === "flac" ? "audio" : "video",
+    bytes: t.total ?? 73_400_320,
+    duration: t.duration,
+    platform: t.platform || t.host,
+    license: t.license || null,
+    source: t.source,
+    favorite: false,
+    downloadedAt: new Date().toISOString(),
+    container: t.format.container,
+  });
+  save();
+}
+
+function renderQueue() {
+  const out = $("#queueOut");
+  $("#queueActions").hidden = queue.length === 0;
+  if (queue.length === 0) {
+    out.innerHTML = `<div class="empty">
+      <div class="ico" aria-hidden="true">✅</div>
+      <h3>Nenhum download na fila</h3>
+      <p>Analise um link autorizado para começar.</p></div>`;
+    return;
+  }
+  out.innerHTML = queue.map(queueRow).join("");
+  $$("[data-act]", out).forEach((b) => b.addEventListener("click", () => {
+    const t = queue.find((x) => x.id === b.dataset.id);
+    if (!t) return;
+    queueAction(t, b.dataset.act);
+  }));
+}
+
+function queueRow(t) {
+  const indet = t.total == null && t.state === "downloading";
+  const pct = t.total ? Math.round(t.got / t.total * 100)
+                      : (t.state === "done" ? 100 : Math.min(99, t.ticks * 4));
+  const eta = t.state === "downloading" && t.total
+    ? fmtDur(Math.max(0, (t.total - t.got) / t.speed)) : null;
+
+  const canPause  = ["downloading", "connecting", "queued"].includes(t.state);
+  const canResume = t.state === "paused";
+  const canRetry  = t.state === "failed" && t.retries < MAX_RETRIES;
+  const canCancel = ACTIVE.has(t.state);
+
+  return `
+  <div class="card">
+    <div class="row">
+      <strong style="flex:1;min-width:0">${esc(t.title)}</strong>
+      <span class="state-chip" style="background:color-mix(in srgb, ${
+        STATE_COLOR[t.state] || "var(--primary-end)"} 18%, transparent)">
+        ${esc(STATE_LABEL[t.state])}</span>
+    </div>
+
+    <div class="row" style="margin-top:var(--s3)"
+      role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"
+      aria-label="${esc(STATE_LABEL[t.state])}, ${pct} por cento">
+      <div class="bar ${indet ? "indet" : ""}" style="flex:1">
+        <i style="width:${indet ? 35 : pct}%"></i></div>
+      <span class="mono" style="width:44px;text-align:right;font-size:13px">
+        ${indet ? "—" : pct + "%"}</span>
+    </div>
+
+    <div class="row mono" style="margin-top:var(--s2);font-size:12.5px;color:var(--ink-2)">
+      <span>${fmtBytes(t.got)}${t.total ? ` / ${fmtBytes(t.total)}` : ""}</span>
+      <span class="spacer"></span>
+      ${t.state === "downloading"
+        ? `<span>${fmtBytes(t.speed)}/s</span><span>ETA ${eta ?? "—"}</span>` : ""}
+    </div>
+
+    ${t.failure ? `<p class="hint err" style="margin-top:var(--s2)">
+      ${esc(t.failure)}</p>` : ""}
+
+    <div class="row" style="margin-top:var(--s3);justify-content:flex-end">
+      ${canRetry ? `<button class="chip" data-act="retry" data-id="${t.id}">
+        ↻ Tentar de novo</button>` : ""}
+      ${canResume ? `<button class="chip" data-act="resume" data-id="${t.id}">
+        ▶ Continuar</button>` : ""}
+      ${canPause ? `<button class="chip" data-act="pause" data-id="${t.id}">
+        ⏸ Pausar</button>` : ""}
+      ${canCancel ? `<button class="chip" data-act="cancel" data-id="${t.id}">
+        ✕ Cancelar</button>` : ""}
+    </div>
+  </div>`;
+}
+
+function queueAction(t, act) {
+  if (act === "pause") transition(t, "paused");
+  if (act === "resume") transition(t, "downloading");
+  if (act === "retry") {
+    t.retries++; t.got = 0; t.failure = null; t.ticks = 0;
+    // Só o item corrompido de exemplo falha para sempre; um retry real
+    // depois de uma falha transitória tem que poder dar certo.
+    if (t.retries >= 2) t.corrupt = false;
+    transition(t, "queued");
+  }
+  if (act === "cancel") {
+    // Cancelar descarta bytes parciais, então sempre pergunta antes.
+    if (!confirm(`O progresso de “${t.title}” será descartado. Cancelar o download?`)) return;
+    transition(t, "canceled");
+  }
+  updateBadge(); renderQueue();
+}
+
+$("#pauseAll").addEventListener("click", () => {
+  queue.forEach((t) => { if (["downloading", "connecting", "queued"].includes(t.state)) transition(t, "paused"); });
+  renderQueue();
+});
+$("#resumeAll").addEventListener("click", () => {
+  queue.forEach((t) => { if (t.state === "paused") transition(t, "downloading"); });
+  renderQueue();
+});
+$("#clearDone").addEventListener("click", () => {
+  for (let i = queue.length - 1; i >= 0; i--) {
+    if (["done", "canceled"].includes(queue[i].state)) queue.splice(i, 1);
+  }
+  renderQueue();
+});
+
+/* ==========================================================================
+   BIBLIOTECA (seção 9)
+   ========================================================================== */
+const LIB_TABS = [
+  { id: "videos", label: "Vídeos" }, { id: "audios", label: "Áudios" },
+  { id: "favorites", label: "Favoritos" }, { id: "recents", label: "Recentes" },
+];
+function libCounts() {
+  return {
+    videos: S.library.filter((e) => e.kind === "video").length,
+    audios: S.library.filter((e) => e.kind === "audio").length,
+    favorites: S.library.filter((e) => e.favorite).length,
+    recents: S.library.length,
+  };
+}
+function libEntries() {
+  let list = S.library.slice();
+  if (S.libTab === "videos") list = list.filter((e) => e.kind === "video");
+  if (S.libTab === "audios") list = list.filter((e) => e.kind === "audio");
+  if (S.libTab === "favorites") list = list.filter((e) => e.favorite);
+  const by = S.libSort;
+  list.sort((a, b) => {
+    if (by === "name") return a.title.localeCompare(b.title, "pt-BR");
+    if (by === "size") return b.bytes - a.bytes;
+    if (by === "duration") return (b.duration ?? 0) - (a.duration ?? 0);
+    if (by === "platform") return String(a.platform).localeCompare(String(b.platform), "pt-BR");
+    return new Date(b.downloadedAt) - new Date(a.downloadedAt);
+  });
+  return list;
+}
+function renderLibrary() {
+  const counts = libCounts();
+  $("#libTabs").innerHTML = LIB_TABS.map((t) => `
+    <button class="chip" role="tab" data-tab="${t.id}"
+      aria-pressed="${S.libTab === t.id}">
+      ${t.label} (${counts[t.id]})</button>`).join("");
+  $$("#libTabs [data-tab]").forEach((b) => b.addEventListener("click", () => {
+    S.libTab = b.dataset.tab; save(); renderLibrary();
+  }));
+  $("#libSort").value = S.libSort;
+  $("#libView").textContent = S.libView === "grid" ? "▦ Grade" : "☰ Lista";
+
+  const list = libEntries();
+  const out = $("#libOut");
+  if (list.length === 0) {
+    out.innerHTML = `<div class="empty">
+      <div class="ico" aria-hidden="true">📚</div>
+      <h3>Nada por aqui ainda</h3>
+      <p>Downloads concluídos aparecem nesta aba.</p></div>`;
+    return;
+  }
+  out.innerHTML = S.libView === "grid"
+    ? `<div class="grid">${list.map(libTile).join("")}</div>`
+    : list.map(libRow).join("");
+  $$("[data-fav]", out).forEach((b) => b.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    const e = S.library.find((x) => x.id === b.dataset.fav);
+    e.favorite = !e.favorite; save(); renderLibrary();
+  }));
+}
+function metaLine(e) {
+  return [fmtBytes(e.bytes), e.platform, e.license].filter(Boolean).join(" · ");
+}
+function libTile(e) {
+  return `<div class="tile">
+    <div class="art" aria-hidden="true">${e.kind === "audio" ? "🎵" : "🎬"}
+      <button class="fav" data-fav="${e.id}"
+        aria-label="${e.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}"
+        title="${e.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}"
+        >${e.favorite ? "♥" : "♡"}</button>
+      ${e.duration ? `<span class="dur mono">${fmtDur(e.duration)}</span>` : ""}
+    </div>
+    <div class="body">
+      <strong>${esc(e.title)}</strong>
+      <div class="meta mono" style="font-size:12px;margin-top:4px">${esc(metaLine(e))}</div>
+    </div>
+  </div>`;
+}
+function libRow(e) {
+  return `<div class="list-row">
+    <span aria-hidden="true" style="font-size:20px">${e.kind === "audio" ? "🎵" : "🎬"}</span>
+    <div style="flex:1;min-width:0">
+      <strong style="font-size:14px">${esc(e.title)}</strong>
+      <div class="meta mono" style="font-size:12px">${esc(metaLine(e))}</div>
+    </div>
+    <button class="fav" data-fav="${e.id}" style="position:static;background:none;color:inherit"
+      aria-label="${e.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}"
+      >${e.favorite ? "♥" : "♡"}</button>
+  </div>`;
+}
+$("#libSort").addEventListener("change", (e) => { S.libSort = e.target.value; save(); renderLibrary(); });
+$("#libView").addEventListener("click", () => {
+  S.libView = S.libView === "grid" ? "list" : "grid"; save(); renderLibrary();
+});
+
+/* ==========================================================================
+   BUSCA (seção 10)
+   ========================================================================== */
+const DURATION_BUCKETS = [
+  { id: "short", label: "< 5 min", max: 300 },
+  { id: "medium", label: "5–20 min", min: 300, max: 1200 },
+  { id: "long", label: "> 20 min", min: 1200 },
+];
+let searchQuery = { text: "", kind: null, bucket: null, platform: null };
+
+function renderSearch() {
+  const platforms = [...new Set(S.library.map((e) => e.platform).filter(Boolean))];
+  const chips = [
+    ...["video", "audio"].map((k) => ({ k: "kind", v: k, label: k === "video" ? "Vídeo" : "Áudio" })),
+    ...DURATION_BUCKETS.map((b) => ({ k: "bucket", v: b.id, label: b.label })),
+    ...platforms.map((p) => ({ k: "platform", v: p, label: p })),
+  ];
+  const active = ["kind", "bucket", "platform"].filter((k) => searchQuery[k]).length;
+  $("#searchFilters").innerHTML = chips.map((c) => `
+    <button class="chip" data-k="${c.k}" data-v="${esc(c.v)}"
+      aria-pressed="${searchQuery[c.k] === c.v}">${esc(c.label)}</button>`).join("")
+    + (active ? `<button class="chip" id="clearFilters">✕ Limpar (${active})</button>` : "");
+  $$("#searchFilters [data-k]").forEach((b) => b.addEventListener("click", () => {
+    const k = b.dataset.k, v = b.dataset.v;
+    searchQuery[k] = searchQuery[k] === v ? null : v;   // filtro é alternável
+    renderSearch();
+  }));
+  $("#clearFilters")?.addEventListener("click", () => {
+    searchQuery = { ...searchQuery, kind: null, bucket: null, platform: null };
+    renderSearch();
+  });
+
+  const q = searchQuery.text.trim().toLowerCase();
+  let hits = S.library.filter((e) => {
+    if (searchQuery.kind && e.kind !== searchQuery.kind) return false;
+    if (searchQuery.platform && e.platform !== searchQuery.platform) return false;
+    if (searchQuery.bucket) {
+      const b = DURATION_BUCKETS.find((x) => x.id === searchQuery.bucket);
+      const d = e.duration;
+      if (d == null) return false;                       // duração desconhecida nunca entra
+      if (b.min != null && d < b.min) return false;
+      if (b.max != null && d >= b.max) return false;
+    }
+    if (!q) return true;
+    return [e.title, e.platform, e.license].filter(Boolean)
+      .some((f) => f.toLowerCase().includes(q));
+  });
+
+  // Tolerância a erro de digitação: se nada bate exato, tenta distância 1.
+  let approximate = false;
+  if (q && hits.length === 0) {
+    hits = S.library.filter((e) => e.title.toLowerCase().split(/\s+/)
+      .some((w) => editDistance(w, q) <= 1));
+    approximate = hits.length > 0;
+  }
+
+  const out = $("#searchOut");
+  if (!q && !searchQuery.kind && !searchQuery.bucket && !searchQuery.platform) {
+    out.innerHTML = `<p class="hint">Digite para buscar na sua biblioteca.</p>`;
+    return;
+  }
+  if (hits.length === 0) {
+    out.innerHTML = `<div class="empty"><div class="ico" aria-hidden="true">🔍</div>
+      <h3>Nenhum resultado</h3><p>Nenhum resultado para esta busca.</p></div>`;
+    return;
+  }
+  out.innerHTML =
+    (approximate ? `<p class="hint">Nada exato — mostrando resultados parecidos.</p>` : "")
+    + hits.map(libRow).join("");
+  $$("[data-fav]", out).forEach((b) => b.addEventListener("click", () => {
+    const e = S.library.find((x) => x.id === b.dataset.fav);
+    e.favorite = !e.favorite; save(); renderSearch();
+  }));
+}
+function editDistance(a, b) {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  const prev = Array(b.length + 1).fill(0).map((_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev.splice(0, prev.length, ...row);
+  }
+  return prev[b.length];
+}
+$("#searchInput").addEventListener("input", (e) => {
+  searchQuery.text = e.target.value; renderSearch();
+});
+
+/* ==========================================================================
+   CONVERSOR (seção 11)
+   ========================================================================== */
+const PRESETS = [
+  { id: "compat", label: "Compatibilidade máxima", target: "mp4" },
+  { id: "small",  label: "Menor tamanho",          target: "mp4" },
+  { id: "podcast",label: "Áudio para podcast",     target: "mp3" },
+  { id: "lossless",label: "Sem perdas",            target: "flac" },
+];
+let preset = "compat";
+const CONV_LABEL = {
+  queued: "Na fila", converting: "Convertendo",
+  completed: "Concluída", failed: "Falhou", canceled: "Cancelada",
+};
+
+function renderConverter() {
+  $("#presetChips").innerHTML = PRESETS.map((p) => `
+    <button class="chip" data-preset="${p.id}" aria-pressed="${preset === p.id}">
+      ${p.label} · ${p.target.toUpperCase()}</button>`).join("");
+  $$("#presetChips [data-preset]").forEach((b) => b.addEventListener("click", () => {
+    preset = b.dataset.preset; renderConverter();
+  }));
+
+  const pick = $("#convPick");
+  if (S.library.length === 0) {
+    pick.innerHTML = `<p class="hint">A biblioteca está vazia — baixe algo
+      autorizado primeiro.</p>`;
+  } else {
+    pick.innerHTML = S.library.slice(0, 6).map((e) => `
+      <div class="list-row">
+        <span aria-hidden="true">${e.kind === "audio" ? "🎵" : "🎬"}</span>
+        <div style="flex:1;min-width:0"><strong style="font-size:14px">${esc(e.title)}</strong>
+          <div class="meta mono" style="font-size:12px">${fmtBytes(e.bytes)}</div></div>
+        <button class="chip" data-conv="${e.id}">Converter</button>
+      </div>`).join("");
+    $$("[data-conv]", pick).forEach((b) => b.addEventListener("click", () => {
+      const e = S.library.find((x) => x.id === b.dataset.conv);
+      const p = PRESETS.find((x) => x.id === preset);
+      const out = `${e.title.replace(/\.[^.]+$/, "")}.${p.target}`;
+      // Um job por (item, alvo): pedir a mesma saída de novo substitui o
+      // pendente em vez de duplicar trabalho.
+      const existing = conversions.find((c) => c.entryId === e.id && c.target === p.target
+        && ["queued", "converting"].includes(c.state));
+      if (existing) { toast("Essa conversão já está na fila."); return; }
+      conversions.unshift({
+        id: uid("c"), entryId: e.id, out, target: p.target, preset: p.label,
+        state: "queued", progress: 0, ticks: 0,
+        // Sem a duração da origem, o tempo processado pelo FFmpeg não vira
+        // porcentagem — a barra fica indeterminada (seção 11).
+        determinate: e.duration != null,
+        failure: null,
+      });
+      toast(`“${out}” entrou na fila de conversão.`);
+      renderConverter();
+    }));
+  }
+  renderConvQueue();
+}
+
+function renderConvQueue() {
+  const out = $("#convOut");
+  if (conversions.length === 0) {
+    out.innerHTML = `<div class="empty"><div class="ico" aria-hidden="true">🔁</div>
+      <h3>Nenhuma conversão</h3>
+      <p>Escolha um item da biblioteca para converter.
+         O arquivo original é preservado.</p></div>`;
+    return;
+  }
+  out.innerHTML = conversions.map((c) => {
+    const pct = Math.round(c.progress * 100);
+    const indet = !c.determinate && c.state === "converting";
+    return `<div class="card">
+      <div class="row">
+        <strong style="flex:1;min-width:0">${esc(c.out)}</strong>
+        <span class="meta">${esc(CONV_LABEL[c.state])}</span>
+      </div>
+      <div class="meta" style="font-size:12.5px">${esc(c.preset)}</div>
+      <div class="row" style="margin-top:var(--s3)"
+        role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"
+        aria-label="${esc(CONV_LABEL[c.state])}, ${pct} por cento">
+        <div class="bar ${indet ? "indet" : ""}" style="flex:1">
+          <i style="width:${indet ? 35 : pct}%"></i></div>
+        <span class="mono" style="width:44px;text-align:right;font-size:13px">
+          ${indet ? "—" : pct + "%"}</span>
+      </div>
+      <div class="row" style="margin-top:var(--s3);justify-content:flex-end">
+        ${["queued", "converting"].includes(c.state)
+          ? `<button class="chip" data-cancel="${c.id}">✕ Cancelar</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  $$("[data-cancel]", out).forEach((b) => b.addEventListener("click", () => {
+    const c = conversions.find((x) => x.id === b.dataset.cancel);
+    // Matar o processo é a única forma confiável de abortar um transcode no
+    // meio de um frame — e a saída parcial é descartada.
+    c.state = "canceled"; c.progress = 0; renderConvQueue();
+  }));
+}
+
+setInterval(() => {
+  let dirty = false;
+  const running = conversions.filter((c) => c.state === "converting").length;
+  for (const c of conversions) {
+    if (c.state === "queued" && running < 1) { c.state = "converting"; dirty = true; break; }
+  }
+  for (const c of conversions) {
+    if (c.state !== "converting") continue;
+    c.ticks++;
+    c.progress = Math.min(1, c.progress + 0.06);
+    if (c.progress >= 1) { c.state = "completed"; }
+    dirty = true;
+  }
+  if (dirty && current === "converter") renderConvQueue();
+}, 300);
+
+/* ==========================================================================
+   CONFIGURAÇÕES (seção 16)
+   ========================================================================== */
+/* Os sinônimos são deliberadamente multilíngues e nunca exibidos: quem usa
+   o app em português continua digitando "dark", e quem usa em inglês
+   continua lembrando de "escuro". */
+const SETTINGS = [
+  { sec: "Geral", key: "theme", type: "select", label: "Tema",
+    options: [["auto", "Automático"], ["light", "Claro"], ["dark", "Escuro"]],
+    words: ["tema", "theme", "claro", "escuro", "dark", "light", "oscuro"] },
+  { sec: "Geral", key: "lang", type: "note", label: "Idioma",
+    note: "O app tem pt-BR, en e es. Este protótipo é só em pt-BR.",
+    words: ["idioma", "language", "português", "english", "español"] },
+  { sec: "Geral", key: "clipboard", type: "toggle",
+    label: "Detectar link na área de transferência",
+    words: ["clipboard", "colar", "portapapeles", "paste"] },
+  { sec: "Downloads", key: "concurrency", type: "range", label: "Downloads simultâneos",
+    min: 1, max: 2, suffix: "",
+    note: "O plano é o teto: o Free permite 2, o Premium 8.",
+    words: ["paralelo", "fila", "concorrência", "parallel", "queue"] },
+  { sec: "Downloads", key: "wifiOnly", type: "toggle", label: "Somente Wi-Fi",
+    words: ["dados móveis", "celular", "4g", "5g", "mobile data"] },
+  { sec: "Downloads", key: "resumeOnReconnect", type: "toggle",
+    label: "Retomar ao reconectar",
+    words: ["resume", "reconexão", "retomar", "reanudar"] },
+  { sec: "Notificações", key: "notifyDone", type: "toggle", label: "Avisar ao concluir",
+    words: ["notificação", "pronto", "notification", "done"] },
+  { sec: "Notificações", key: "notifyError", type: "toggle", label: "Avisar em caso de erro",
+    words: ["falha", "error", "failure"] },
+  { sec: "Notificações", key: "notifyStyle", type: "select", label: "Estilo das notificações",
+    options: [["sound", "Som"], ["vibrate", "Vibrar"], ["silent", "Silencioso"]],
+    words: ["som", "vibrar", "silencioso", "sound", "silent"] },
+  { sec: "Notificações", key: "dailyDigest", type: "toggle", label: "Resumo diário",
+    words: ["digest", "resumo", "resumen"] },
+  { sec: "Bateria e dados", key: "batterySaver", type: "toggle", label: "Modo economia",
+    note: "Reduz downloads simultâneos e desliga animações.",
+    words: ["bateria", "animações", "economizar", "battery", "saver", "ahorro"] },
+  { sec: "Bateria e dados", key: "pauseLowBattery", type: "toggle",
+    label: "Pausar com bateria baixa", note: "Abaixo de 15%.",
+    words: ["15%", "bateria", "battery", "batería"] },
+  { sec: "Armazenamento", key: "thumbCacheMb", type: "range", label: "Cache de miniaturas",
+    min: 50, max: 500, step: 50, suffix: " MB",
+    words: ["thumbnail", "miniatura", "cache", "espaço"] },
+  { sec: "Armazenamento", key: "trashDays", type: "range", label: "Retenção da lixeira",
+    min: 1, max: 30, suffix: " dias",
+    words: ["dias", "excluir", "trash", "lixeira", "papelera"] },
+  { sec: "Acessibilidade", key: "reduceMotion", type: "toggle", label: "Reduzir animações",
+    words: ["movimento", "motion", "animação", "acessibilidade"] },
+  { sec: "Privacidade", key: "analytics", type: "toggle", label: "Enviar dados de uso",
+    note: "Desligado por padrão. Nada é enviado sem sua permissão.",
+    words: ["analytics", "telemetria", "lgpd", "gdpr", "privacidade"] },
+  { sec: "Privacidade", key: "policy", type: "note", label: "Política de uso responsável",
+    note: "O Vidora só baixa conteúdo autorizado pela plataforma de origem ou pelo titular dos direitos.",
+    words: ["conformidade", "direitos autorais", "licença", "copyright", "compliance"] },
+];
+
+function renderSettings() {
+  const q = $("#setSearch").value.trim().toLowerCase();
+  const matches = SETTINGS.filter((r) => !q
+    || [r.sec, r.label, ...(r.words || [])].some((f) => f.toLowerCase().includes(q)));
+  const out = $("#setOut");
+  if (matches.length === 0) {
+    out.innerHTML = `<p class="hint" style="text-align:center;padding:var(--s6) 0">
+      Nenhuma configuração encontrada.</p>`;
+    return;
+  }
+  let html = "", lastSec = null;
+  for (const r of matches) {
+    if (r.sec !== lastSec) { html += `<h2 class="section">${esc(r.sec)}</h2>`; lastSec = r.sec; }
+    html += settingRow(r);
+  }
+  out.innerHTML = html;
+
+  $$("[data-toggle]", out).forEach((b) => b.addEventListener("click", () => {
+    S[b.dataset.toggle] = !S[b.dataset.toggle];
+    save(); applyTheme(); renderSettings();
+  }));
+  $$("[data-select]", out).forEach((el) => el.addEventListener("change", () => {
+    S[el.dataset.select] = el.value; save(); applyTheme(); renderSettings();
+  }));
+  $$("[data-range]", out).forEach((el) => el.addEventListener("input", () => {
+    S[el.dataset.range] = Number(el.value); save();
+    $(`#val-${el.dataset.range}`).textContent = rangeText(
+      SETTINGS.find((r) => r.key === el.dataset.range), Number(el.value));
+  }));
+}
+function rangeText(r, v) { return `${v}${r.suffix || ""}`; }
+function settingRow(r) {
+  if (r.type === "toggle") {
+    return `<div class="toggle-row">
+      <div class="txt"><span>${esc(r.label)}</span>
+        ${r.note ? `<small>${esc(r.note)}</small>` : ""}</div>
+      <button class="switch" role="switch" data-toggle="${r.key}"
+        aria-checked="${!!S[r.key]}" aria-label="${esc(r.label)}"></button>
+    </div>`;
+  }
+  if (r.type === "select") {
+    return `<div class="toggle-row">
+      <div class="txt"><span>${esc(r.label)}</span></div>
+      <select data-select="${r.key}" aria-label="${esc(r.label)}">
+        ${r.options.map(([v, l]) =>
+          `<option value="${v}" ${S[r.key] === v ? "selected" : ""}>${esc(l)}</option>`).join("")}
+      </select></div>`;
+  }
+  if (r.type === "range") {
+    return `<div class="toggle-row" style="flex-wrap:wrap">
+      <div class="txt"><span>${esc(r.label)}</span>
+        ${r.note ? `<small>${esc(r.note)}</small>` : ""}</div>
+      <span class="mono" id="val-${r.key}" style="font-size:13px">
+        ${rangeText(r, S[r.key])}</span>
+      <input type="range" data-range="${r.key}" min="${r.min}" max="${r.max}"
+        step="${r.step || 1}" value="${S[r.key]}" aria-label="${esc(r.label)}"
+        style="flex-basis:100%">
+    </div>`;
+  }
+  return `<div class="toggle-row"><div class="txt"><span>${esc(r.label)}</span>
+    <small>${esc(r.note)}</small></div></div>`;
+}
+$("#setSearch").addEventListener("input", renderSettings);
+
+/* ==========================================================================
+   BOOT
+   ========================================================================== */
+applyTheme();
+renderOnb();
+if (S.onboarded) { document.body.classList.add("started"); go("analyze"); }
+updateBadge();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* offline é opcional */ });
+  });
+}
+</script>
+</body>
+</html>

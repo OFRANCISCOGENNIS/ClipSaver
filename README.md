@@ -13,6 +13,7 @@ produto: veja [`docs/compliance.md`](docs/compliance.md) e
 app/       Aplicativo Flutter (domínio, infraestrutura e as seis telas em
            MVVM + Riverpod), em pt-BR, en e es
 server/    Backend NestJS (eligibility, analysis, auth, billing, health)
+prototype/ Protótipo HTML autocontido, publicado na raiz do site
 deploy/    Manifestos Kubernetes e o smoke test de pós-deploy
 docs/      ADRs e documentação de conformidade
 ```
@@ -48,16 +49,32 @@ código-fonte, por isso não são versionados.
 
 ## Site
 
-O PWA é publicado no GitHub Pages pelo workflow `pages.yml`. Requer uma
-configuração única no GitHub — Settings → Pages → Source: **GitHub
-Actions** — e então fica em `https://<owner>.github.io/ClipSaver/`.
+Publicado no GitHub Pages pelo workflow `pages.yml`, em duas partes no mesmo
+domínio:
 
-Biblioteca, conversor, configurações e onboarding rodam do navegador, porque
-o banco do app é local (SQLite compilado para WASM). A tela Analyze depende
-de API: elegibilidade é decidida no servidor de propósito, então sem backend
-alcançável ela reporta erro de conexão em vez de fingir um veredito. Aponte a
-variável de repositório `VIDORA_API_BASE_URL` para uma API publicada para
-ligar as duas pontas. Detalhes em [`docs/deploy.md`](docs/deploy.md).
+| Endereço | O que é |
+|---|---|
+| `https://<owner>.github.io/ClipSaver/` | protótipo navegável — abre e funciona, sem backend |
+| `https://<owner>.github.io/ClipSaver/app/` | o PWA Flutter de verdade, compilado deste repositório |
+
+Requer uma configuração única no GitHub: Settings → Pages → Source: **GitHub
+Actions**.
+
+**O protótipo** (`prototype/index.html`) é um arquivo só, sem dependências,
+com as seis telas e o onboarding de conformidade. Os vereditos de
+elegibilidade são resolvidos contra um catálogo local — ele demonstra tanto
+as quatro bases de autorização quanto as recusas (DRM, paywall, login de
+terceiros, endereço interno), e avisa isso numa faixa fixa no topo. Um
+protótipo que "baixasse" qualquer link daria a impressão errada justamente
+sobre a parte do produto que mais importa.
+
+**O app** roda biblioteca, conversor, configurações e onboarding direto do
+navegador, porque o banco é local (SQLite compilado para WASM). A tela
+Analyze depende de API: elegibilidade é decidida no servidor de propósito,
+então sem backend alcançável ela reporta erro de conexão em vez de fingir um
+veredito. Aponte a variável de repositório `VIDORA_API_BASE_URL` para uma API
+publicada para ligar as duas pontas. Detalhes em
+[`docs/deploy.md`](docs/deploy.md).
 
 ## Qualidade
 
@@ -77,7 +94,7 @@ interface bem testada flutuando sobre uma máquina de estados sem teste.
 | Workflow | Quando | O que faz |
 |---|---|---|
 | `ci.yml` | push e PR | lint, testes, gates de cobertura, build da imagem com smoke, render dos manifestos |
-| `pages.yml` | push em `main` que toque `app/` | publica o PWA no GitHub Pages |
+| `pages.yml` | push em `main` que toque `app/` ou `prototype/` | publica o protótipo e o PWA no GitHub Pages |
 | `release.yml` | tag `v*` | builds das 6 plataformas + checksums |
 | `deploy.yml` | push em `main` que toque `server/` | imagem por digest → staging → smoke → produção com aprovação |
 
