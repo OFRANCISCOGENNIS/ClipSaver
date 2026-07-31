@@ -22,6 +22,24 @@ produto), cada um implementado como um adaptador com base legal explícita:
 | `open_license` | Licença aberta declarada | `open_license` | CC/domínio público detectados em metadados (oEmbed, schema.org, rel=license) |
 | `direct_file` | Arquivo de acesso direto | `direct_file` | Mídia servida publicamente por link direto, sem barreira técnica |
 
+### Plataformas reconhecidas por nome
+
+Um adaptador diz *qual base legal* autoriza; um **probe de plataforma**
+diz o que uma plataforma específica realmente oferece. A separação
+importa: o motor de elegibilidade decide e nunca busca nada, então quem
+consulta a API oficial é a camada de análise.
+
+| Plataforma | Endpoint oficial consultado | Recusa quando |
+|---|---|---|
+| Internet Archive | `https://archive.org/metadata/<id>` | o item é `is_dark` ou tem `access-restricted-item` (empréstimo controlado) |
+
+O Archive publica esse endpoint justamente para que clientes enumerem e
+busquem itens — baixar por ele é o uso previsto, não um contorno. A
+recusa de itens em empréstimo restrito é o ponto que exige cuidado: são
+livros e discos que a instituição gateia de propósito, e ignorar a marca
+seria baixar exatamente o que ela protege. Uma falha ao alcançar a API
+também recusa: erro de rede nunca vira permissão.
+
 O catálogo de adaptadores é exposto programaticamente
 (`EligibilityService.adapters`) com `legalBasis`, `officialEndpoint` e
 `tosUrl` por adaptador, servindo de trilha de auditoria e alimentando a

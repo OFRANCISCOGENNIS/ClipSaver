@@ -84,7 +84,7 @@ publicada para ligar as duas pontas. Detalhes em
 
 | Métrica | Valor | Mínimo |
 |---|---|---|
-| Testes | 516 (app) + 136 (servidor) + 7 (navegador) | — |
+| Testes | 516 (app) + 155 (servidor) + 7 (navegador) | — |
 | Cobertura domínio/aplicação (app) | 97,4% | 95% |
 | Cobertura total (app) | 89,6% | 80% |
 | Cobertura de linhas (servidor) | 98,4% | 95% |

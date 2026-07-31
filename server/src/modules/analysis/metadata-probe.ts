@@ -7,6 +7,7 @@
  * `http-metadata-probe.ts`; tests inject deterministic fakes.
  */
 import type { AnalysisContext, MediaFormat } from '../eligibility/domain/types.js';
+import type { PlatformFacts } from './platform/archive-org.probe.js';
 
 /** Raw facts a probe gathered about one URL. */
 export interface ProbeResult {
@@ -28,6 +29,13 @@ export interface ProbeResult {
   drmDetected: boolean;
   /** Renditions when the URL is itself a media file. */
   directFileFormats?: MediaFormat[];
+  /**
+   * Facts contributed by a platform-specific probe that recognized the
+   * URL. Only a probe that consulted the platform's official API may set
+   * this: `officialDownloadEnabled` is what authorizes the download, so
+   * inferring it from the URL alone would turn a guess into permission.
+   */
+  platform?: PlatformFacts;
 }
 
 /** Port implemented by HTTP/platform-specific probes. */
@@ -52,5 +60,6 @@ export function toAnalysisContext(url: URL, probe: ProbeResult): AnalysisContext
   if (probe.contentType !== undefined) context.contentType = probe.contentType;
   if (probe.licenseMetadata !== undefined) context.licenseMetadata = probe.licenseMetadata;
   if (probe.directFileFormats !== undefined) context.directFileFormats = probe.directFileFormats;
+  if (probe.platform !== undefined) context.platform = probe.platform;
   return context;
 }

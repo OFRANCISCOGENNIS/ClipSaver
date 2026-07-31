@@ -9,6 +9,12 @@
  * thing this class must never do.
  */
 import type { MetadataProbe, ProbeResult } from './metadata-probe.js';
+import {
+  ARCHIVE_METADATA_ENDPOINT,
+  archiveFactsFrom,
+  archiveIdentifierOf,
+  type ArchiveMetadata,
+} from './platform/archive-org.probe.js';
 
 /** Minimal fetch signature so tests can inject a deterministic client. */
 export type FetchLike = (
@@ -29,6 +35,13 @@ export class HttpMetadataProbe implements MetadataProbe {
   constructor(private readonly fetchImpl: FetchLike) {}
 
   async probe(url: URL): Promise<ProbeResult> {
+    // A recognized platform is asked first, and its official API is the
+    // authority on that item. Falling through to the generic HTML scrape
+    // would read the *page* instead of the platform, and a page never
+    // says whether a download is permitted.
+    const archive = await this.probeArchiveOrg(url);
+    if (archive) return archive;
+
     const head = await this.request('HEAD', url);
     if (head.status === 401 || head.status === 403) {
       return { ...emptyResult(), requiresAuthentication: true };
@@ -85,6 +98,33 @@ export class HttpMetadataProbe implements MetadataProbe {
     result.drmDetected = DRM_MARKERS.some((marker) => lowered.includes(marker));
 
     return result;
+  }
+
+  /**
+   * Consults archive.org's public metadata API for a recognized item.
+   *
+   * Returns `null` when the URL is not an Archive item, so the generic
+   * path handles it. A failure to reach the API also returns `null`
+   * rather than a refusal: the caller then treats the URL like any other,
+   * which fails closed anyway — but it never reports a permission the
+   * Archive did not actually grant.
+   */
+  private async probeArchiveOrg(url: URL): Promise<ProbeResult | null> {
+    const identifier = archiveIdentifierOf(url);
+    if (identifier === null) return null;
+
+    try {
+      const response = await this.request(
+        'GET',
+        new URL(`${ARCHIVE_METADATA_ENDPOINT}/${encodeURIComponent(identifier)}`),
+      );
+      if (response.status !== 200) return null;
+      const payload = JSON.parse(await response.text()) as ArchiveMetadata;
+      const platform = archiveFactsFrom(identifier, payload);
+      return { ...emptyResult(), platform };
+    } catch {
+      return null;
+    }
   }
 
   private async request(method: 'HEAD' | 'GET', url: URL) {
