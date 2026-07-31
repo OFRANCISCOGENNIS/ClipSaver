@@ -25,7 +25,12 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+# Prisma runs once at deploy time to create/update the schema. Keep its CLI
+# available in the runtime image; the application still runs as the unprivileged
+# `node` user afterwards.
+RUN npm ci --no-audit --no-fund
+COPY prisma.config.ts ./
+COPY prisma ./prisma
 COPY --from=build /app/dist ./dist
 # Prisma 7 writes the generated client into @prisma/client itself (v6 used
 # node_modules/.prisma). Copying the stale path would leave the runtime
