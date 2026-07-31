@@ -1,9 +1,9 @@
 /**
  * Environment configuration, validated with zod (section 4.3 of the spec:
- * "validação de env com zod").
+ * "validaÃ§Ã£o de env com zod").
  *
  * Responsibility: fail fast at boot on invalid configuration and expose a
- * single typed object — no `process.env` access anywhere else.
+ * single typed object â€” no `process.env` access anywhere else.
  */
 import { z } from 'zod';
 
@@ -23,6 +23,8 @@ const envSchema = z.object({
   REDIS_URL: z.string().url().optional(),
   /** Postgres connection for Prisma. */
   DATABASE_URL: z.string().optional(),
+  /** Comma-separated browser origins allowed to call the public API. */
+  CORS_ORIGINS: z.string().min(1).optional(),
   /** Idempotent analysis cache TTL (section 4.3: 24h, configurable). */
   ANALYSIS_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(24 * 3600),
   /** Rate limiting window and cap (per IP). */
@@ -48,10 +50,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     const issues = parsed.error.issues
       .map((i) => `${i.path.join('.')}: ${i.message}`)
       .join('; ');
-    throw new Error(`Invalid environment configuration — ${issues}`);
+    throw new Error(`Invalid environment configuration â€” ${issues}`);
   }
   if (parsed.data.NODE_ENV === 'production' && parsed.data.JWT_SECRET.startsWith('dev-only')) {
     throw new Error('JWT_SECRET must be set explicitly in production');
+  }
+  if (parsed.data.NODE_ENV === 'production' && !parsed.data.CORS_ORIGINS) {
+    throw new Error('CORS_ORIGINS must be set explicitly in production');
   }
   return parsed.data;
 }

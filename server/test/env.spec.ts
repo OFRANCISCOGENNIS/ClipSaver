@@ -22,11 +22,23 @@ describe('loadEnv', () => {
   });
 
   it('refuses the dev JWT secret in production', () => {
-    expect(() => loadEnv({ NODE_ENV: 'production' } as NodeJS.ProcessEnv)).toThrow(/JWT_SECRET/);
+    expect(() =>
+      loadEnv({ NODE_ENV: 'production', CORS_ORIGINS: 'https://app.example.test' } as NodeJS.ProcessEnv),
+    ).toThrow(/JWT_SECRET/);
     const env = loadEnv({
       NODE_ENV: 'production',
       JWT_SECRET: 'a-real-secret-with-length',
+      CORS_ORIGINS: 'https://app.example.test',
     } as NodeJS.ProcessEnv);
     expect(env.NODE_ENV).toBe('production');
+  });
+
+  it('requires explicit browser origins in production', () => {
+    expect(() =>
+      loadEnv({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'a-real-secret-with-length',
+      } as NodeJS.ProcessEnv),
+    ).toThrow(/CORS_ORIGINS/);
   });
 });

@@ -11,9 +11,15 @@ async function bootstrap(): Promise<void> {
   const env = loadEnv();
   const app = await NestFactory.create(AppModule);
 
-  // Restrictive CORS (section 13): explicit origins only, no wildcard.
+  // Restrictive CORS: explicit browser origins only, never a wildcard.
+  const corsOrigin =
+    env.NODE_ENV === 'production'
+      ? env.CORS_ORIGINS!.split(',')
+          .map((origin) => origin.trim())
+          .filter(Boolean)
+      : true;
   app.enableCors({
-    origin: env.NODE_ENV === 'production' ? ['https://app.vidora.example'] : true,
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
     maxAge: 3600,
   });
@@ -22,9 +28,9 @@ async function bootstrap(): Promise<void> {
   const config = new DocumentBuilder()
     .setTitle('Vidora API')
     .setDescription(
-      'API do Vidora — análise de elegibilidade e autenticação. ' +
-        'Downloads só são autorizados por API oficial, licença aberta, ' +
-        'conteúdo do próprio usuário ou arquivo público de acesso direto.',
+      'API do Vidora â€” anÃ¡lise de elegibilidade e autenticaÃ§Ã£o. ' +
+        'Downloads sÃ³ sÃ£o autorizados por API oficial, licenÃ§a aberta, ' +
+        'conteÃºdo do prÃ³prio usuÃ¡rio ou arquivo pÃºblico de acesso direto.',
     )
     .setVersion('0.2.0')
     .addBearerAuth()
