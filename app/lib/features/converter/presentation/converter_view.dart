@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/empty_state.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/conversion_job.dart';
 import 'converter_state.dart';
@@ -183,33 +184,9 @@ class _EmptyQueue extends StatelessWidget {
   const _EmptyQueue();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: kPagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.swap_horiz,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: VidoraSpacing.lg),
-            Text(
-              context.l10n.converterEmptyTitle,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: VidoraSpacing.sm),
-            Text(
-              context.l10n.converterEmptyBody,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.swap_horiz,
+        title: context.l10n.converterEmptyTitle,
+        body: context.l10n.converterEmptyBody,
+      );
 }

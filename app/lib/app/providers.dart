@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/api_client.dart';
 import '../core/network/dio_api_client.dart';
 import '../core/platform/clipboard_reader.dart';
+import '../core/platform/system_notifications.dart';
 import '../core/storage/database.dart';
 import '../core/storage/download_file_system.dart';
 import '../features/analyze/domain/analyze_repository.dart';
@@ -19,6 +20,7 @@ import '../features/converter/application/conversion_manager.dart';
 import '../features/converter/domain/media_converter.dart';
 import '../features/converter/infrastructure/in_memory_converter_repository.dart';
 import '../features/downloads/application/download_manager.dart';
+import '../features/downloads/application/download_notifier.dart';
 import '../features/downloads/domain/download_repository.dart';
 import '../features/downloads/infrastructure/dio_download_transport.dart';
 import '../features/downloads/infrastructure/download_engine.dart';
@@ -140,6 +142,28 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
   );
   ref.onDispose(manager.dispose);
   return manager;
+});
+
+/// System notifications. Overridden with a fake in tests; a no-op on web
+/// and Windows, decided by the conditional import, not by an `if` here.
+final notificationPortProvider = Provider<NotificationPort>(
+  (ref) => createNotificationPort(),
+);
+
+/// Bridges terminal queue events to the notification port.
+///
+/// Eagerly created at bootstrap rather than lazily by a screen: a download
+/// that finishes while the user is on Library must still notify, and a
+/// provider nobody watched would never have subscribed.
+final downloadNotifierProvider = Provider<DownloadNotifier>((ref) {
+  final notifier = DownloadNotifier(
+    terminalUpdates: ref.watch(downloadManagerProvider).terminalUpdates,
+    repository: ref.watch(downloadRepositoryProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+    port: ref.watch(notificationPortProvider),
+  );
+  ref.onDispose(notifier.dispose);
+  return notifier;
 });
 
 /// Library search over the FTS5 index.

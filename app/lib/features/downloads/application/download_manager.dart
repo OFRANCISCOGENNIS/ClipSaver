@@ -51,6 +51,13 @@ final class DownloadManager {
   int _maxConcurrent;
   final Set<String> _running = {};
 
+  /// Emits each task that reaches a state the scheduler will not act on
+  /// again: `done`, or `failed` with the retry budget spent. A failure that
+  /// still has retries is not terminal — it re-queues itself — and
+  /// `canceled` is deliberate user action, not news.
+  final StreamController<DownloadTask> _terminal =
+      StreamController<DownloadTask>.broadcast();
+
   /// Tasks the user paused or canceled while they were waiting in queue,
   /// so the scheduler must not pick them up.
   final Set<String> _stopRequested = {};
@@ -63,6 +70,9 @@ final class DownloadManager {
 
   /// Current parallel-download limit (1–8, section 8.2).
   int get maxConcurrent => _maxConcurrent;
+
+  /// Terminal outcomes, for whoever needs to tell the user (notifications).
+  Stream<DownloadTask> get terminalUpdates => _terminal.stream;
 
   /// Ids of downloads currently transferring.
   Set<String> get runningTaskIds => Set.unmodifiable(_running);
@@ -198,6 +208,7 @@ final class DownloadManager {
     for (final id in _running.toList()) {
       _engine.cancel(id);
     }
+    unawaited(_terminal.close());
   }
 
   Future<Result<DownloadTask>> _stopQueued(
@@ -269,7 +280,13 @@ final class DownloadManager {
         onUpdate: (updated) => unawaited(_repository.save(updated)),
       );
       final finished = result.valueOrNull;
+      if (finished != null && finished.state == DownloadState.done) {
+        _emitTerminal(finished);
+      }
       if (finished != null && finished.state == DownloadState.failed) {
+        // Only a failure the scheduler gave up on is worth announcing;
+        // one that will retry in a second would just cry wolf.
+        if (!finished.canRetry) _emitTerminal(finished);
         await _scheduleRetry(finished);
       }
     } finally {
@@ -277,6 +294,10 @@ final class DownloadManager {
       _resumeRequested.remove(task.id);
       if (!_disposed) unawaited(_pump());
     }
+  }
+
+  void _emitTerminal(DownloadTask task) {
+    if (!_terminal.isClosed) _terminal.add(task);
   }
 
   /// Re-queues a failed task after its backoff delay, while the retry

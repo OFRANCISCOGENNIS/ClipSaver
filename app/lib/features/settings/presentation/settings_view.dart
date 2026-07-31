@@ -254,6 +254,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         onChanged: onChanged,
       );
 
+  // Não é um ListTile de propósito. Com a fonte do sistema em 2x, o
+  // dropdown no trailing fica mais largo do que o tile inteiro e o ListTile
+  // lança "Trailing widget consumes the entire tile width" — e as outras 15
+  // exceções da tela eram cascata dessa. O Wrap mantém título e controle na
+  // mesma linha enquanto cabem, e desce o controle para a linha de baixo
+  // quando a fonte cresce, em vez de estourar.
   Widget _choice<T>(
     String title,
     T current,
@@ -261,22 +267,41 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     String Function(T value) label,
     ValueChanged<T> onSelected,
   ) =>
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(title),
-        trailing: DropdownButton<T>(
-          value: current,
-          underline: const SizedBox.shrink(),
-          // itemHeight fixo (48 por padrão) não acompanha a fonte do
-          // sistema: em 2x o rótulo do item não cabe no item e vaza pelo
-          // rodapé. Nulo faz cada item se dimensionar pelo próprio texto.
-          itemHeight: null,
-          onChanged: (value) {
-            if (value != null) onSelected(value);
-          },
-          items: [
-            for (final option in options)
-              DropdownMenuItem(value: option, child: Text(label(option))),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: VidoraSpacing.sm),
+        child: Row(
+          children: [
+            Expanded(child: Text(title)),
+            const SizedBox(width: VidoraSpacing.md),
+            // isExpanded dentro de um Flexible: sem isso o dropdown se
+            // dimensiona pelo item mais largo — "Português (Brasil)" em 2x
+            // pede 235px a mais do que a tela tem — e a Row interna dele
+            // estoura sem nem consultar o layout de fora. Expandido, ele
+            // aceita a largura que recebe e o rótulo ganha reticências.
+            Flexible(
+              child: DropdownButton<T>(
+                value: current,
+                underline: const SizedBox.shrink(),
+                isExpanded: true,
+                alignment: AlignmentDirectional.centerEnd,
+                // itemHeight fixo (48 por padrão) não acompanha a fonte do
+                // sistema; nulo dimensiona cada item pelo próprio texto.
+                itemHeight: null,
+                onChanged: (value) {
+                  if (value != null) onSelected(value);
+                },
+                items: [
+                  for (final option in options)
+                    DropdownMenuItem(
+                      value: option,
+                      child: Text(
+                        label(option),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       );

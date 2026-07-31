@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/shell.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../app/widgets/empty_state.dart';
 import '../../../l10n/l10n.dart';
 import '../../analyze/presentation/widgets/analysis_result_card.dart';
 import '../domain/library_entry.dart';
@@ -422,33 +423,9 @@ class _EmptyLibrary extends StatelessWidget {
   const _EmptyLibrary();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: kPagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.video_library_outlined,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: VidoraSpacing.lg),
-            Text(
-              context.l10n.libraryEmptyTitle,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: VidoraSpacing.sm),
-            Text(
-              context.l10n.libraryEmptyBody,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.video_library_outlined,
+        title: context.l10n.libraryEmptyTitle,
+        body: context.l10n.libraryEmptyBody,
+      );
 }

@@ -502,6 +502,12 @@ abstract class AppLocalizations {
   /// **'“{title}” falhou'**
   String downloadsAnnounceFailed(String title);
 
+  /// No description provided for @downloadsAnnounceQueueDone.
+  ///
+  /// In pt, this message translates to:
+  /// **'Todos os downloads terminaram'**
+  String get downloadsAnnounceQueueDone;
+
   /// No description provided for @downloadStateQueued.
   ///
   /// In pt, this message translates to:

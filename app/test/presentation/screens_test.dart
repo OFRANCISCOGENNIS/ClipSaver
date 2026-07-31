@@ -532,10 +532,6 @@ void main() {
             expect(tester.takeException(), isNull);
           });
         },
-        // Defeito conhecido e não corrigido: em 3x a tela estoura 165px.
-        // O teste fica aqui, nomeando o problema, em vez de sumir — quando
-        // o layout for arrumado, some o skip e ele passa a proteger.
-        skip: scale >= 3,
       );
 
       testWidgets(
@@ -546,10 +542,6 @@ void main() {
             expect(tester.takeException(), isNull);
           });
         },
-        // Defeito conhecido e não corrigido: a tela estoura já em 2x, e o
-        // erro se repete a cada frame (6016 exceções numa execução). O
-        // itemHeight do DropdownButton era só uma das causas.
-        skip: true,
       );
 
       testWidgets('a fila renderiza sem estouro em ${scale}x', (tester) async {

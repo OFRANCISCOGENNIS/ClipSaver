@@ -67,6 +67,7 @@
   "downloadsItemSemantics": "{title}, {state}",
   "downloadsAnnounceDone": "“{title}” finished",
   "downloadsAnnounceFailed": "“{title}” failed",
+  "downloadsAnnounceQueueDone": "All downloads finished",
   "downloadStateQueued": "Queued",
   "downloadStateConnecting": "Connecting",
   "downloadStateDownloading": "Downloading",

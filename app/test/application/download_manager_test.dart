@@ -378,6 +378,74 @@ void main() {
       manager.dispose();
     });
   });
+
+  group('eventos terminais', () {
+    test('um download concluído é anunciado uma vez', () async {
+      final manager = managerWith(FakeTransport([
+        ok([1, 2, 3])
+      ]));
+      final vistos = <DownloadTask>[];
+      final sub = manager.terminalUpdates.listen(vistos.add);
+
+      await manager.enqueue(taskFixture());
+      await repository.waitUntil(
+        (tasks) => tasks.every((t) => t.state == DownloadState.done),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(vistos, hasLength(1));
+      expect(vistos.single.state, DownloadState.done);
+      await sub.cancel();
+      manager.dispose();
+    });
+
+    test('uma falha com retry pela frente não é anunciada', () async {
+      // Só a primeira tentativa falha; o agendador re-enfileira sozinho e
+      // o download termina. Avisar "falhou" no meio disso seria gritar
+      // lobo: quando o usuário olhasse, estaria concluído.
+      final manager = managerWith(FakeTransport([
+        boom(),
+        ok([1, 2, 3]),
+      ]));
+      final vistos = <DownloadTask>[];
+      final sub = manager.terminalUpdates.listen(vistos.add);
+
+      await manager.enqueue(taskFixture());
+      await repository.waitUntil(
+        (tasks) => tasks.every((t) => t.state == DownloadState.done),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(vistos.map((t) => t.state), [DownloadState.done]);
+      await sub.cancel();
+      manager.dispose();
+    });
+
+    test('a falha final, com o orçamento de retry gasto, é anunciada',
+        () async {
+      const tentativas = DownloadTask.maxRetries + 1;
+      final manager = managerWith(
+        FakeTransport(List.generate(tentativas, (_) => boom())),
+      );
+      final vistos = <DownloadTask>[];
+      final sub = manager.terminalUpdates.listen(vistos.add);
+
+      await manager.enqueue(taskFixture());
+      await repository.waitUntil(
+        (tasks) =>
+            tasks.every((t) => t.state == DownloadState.failed) &&
+            backoffs.length == DownloadTask.maxRetries,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      // Uma só: as falhas intermediárias ficaram caladas.
+      expect(vistos, hasLength(1));
+      expect(vistos.single.state, DownloadState.failed);
+      expect(vistos.single.canRetry, isFalse);
+      await sub.cancel();
+      manager.dispose();
+    });
+  });
 }
 
 /// Stand-in for a transport-level network error.

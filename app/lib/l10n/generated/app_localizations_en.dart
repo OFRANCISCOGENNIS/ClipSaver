@@ -245,6 +245,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get downloadsAnnounceQueueDone => 'All downloads finished';
+
+  @override
   String get downloadStateQueued => 'Queued';
 
   @override

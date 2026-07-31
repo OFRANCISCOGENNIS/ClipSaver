@@ -245,6 +245,7 @@
     }
   },
   "downloadsAnnounceFailed": "“{title}” falhou",
+  "downloadsAnnounceQueueDone": "Todos os downloads terminaram",
   "@downloadsAnnounceFailed": {
     "placeholders": {
       "title": {

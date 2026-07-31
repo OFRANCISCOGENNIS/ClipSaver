@@ -51,6 +51,15 @@ class _VidoraAppState extends ConsumerState<VidoraApp> {
   final _router = buildRouter();
 
   @override
+  void initState() {
+    super.initState();
+    // Read, not watch, and here rather than in a screen: the notifier has
+    // to be subscribed to the queue from boot, or a download that finishes
+    // while the user is on another screen ends silently.
+    ref.read(downloadNotifierProvider);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsViewModelProvider);
     final themeMode = switch (settings.valueOrNull?.themeMode) {
