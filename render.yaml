@@ -1,0 +1,43 @@
+# Render Blueprint for the public Vidora API and its managed data stores.
+# Import this repository as a Blueprint in Render; no credentials are stored here.
+services:
+  - type: web
+    name: vidora-api
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    dockerCommand: sh -c "npx prisma db push && node dist/main.js"
+    healthCheckPath: /health/live
+    buildFilter:
+      paths:
+        - server/**
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://ofranciscogennis.github.io
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vidora-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: vidora-cache
+          property: connectionString
+
+  - type: keyvalue
+    name: vidora-cache
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: vidora-db
+    plan: free
+    region: virginia
