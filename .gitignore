@@ -20,3 +20,10 @@ app/.dart_tool/
 
 # app/pubspec.lock IS committed: app/ is an application, so builds
 # must be reproducible from the locked dependency set.
+
+# Árvore montada do site e artefatos dos testes de navegador: saída de
+# build, reconstruída pelo CI a cada execução.
+/site/
+/e2e/node_modules/
+/e2e/test-results/
+/e2e/playwright-report/

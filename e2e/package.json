@@ -1,0 +1,12 @@
+{
+  "name": "vidora-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser checks against the built site tree",
+  "scripts": {
+    "test": "playwright test --config playwright.config.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

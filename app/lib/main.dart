@@ -6,11 +6,14 @@
 /// unchanged for all six targets.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/providers.dart';
 import 'app/router.dart';
+import 'app/shared_link_routing.dart';
 import 'app/theme/app_theme.dart';
 import 'core/platform/platform_services.dart';
 import 'features/settings/domain/app_settings.dart';
@@ -50,6 +53,8 @@ class _VidoraAppState extends ConsumerState<VidoraApp> {
   // stack on every hot reload and theme change.
   final _router = buildRouter();
 
+  StreamSubscription<String>? _sharedLinks;
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +62,32 @@ class _VidoraAppState extends ConsumerState<VidoraApp> {
     // to be subscribed to the queue from boot, or a download that finishes
     // while the user is on another screen ends silently.
     ref.read(downloadNotifierProvider);
+    _listenForSharedLinks();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sharedLinks?.cancel());
+    super.dispose();
+  }
+
+  /// Picks up the link that launched the app, then keeps listening for
+  /// shares that arrive while it is running.
+  ///
+  /// The link only ever *opens Analyze pre-filled*. It is never analyzed
+  /// automatically and never enqueued: eligibility is the server's call
+  /// (section 2.2), and a share that started a download by itself would be
+  /// a way to make the app fetch a URL the user never confirmed.
+  void _listenForSharedLinks() {
+    final port = ref.read(sharedLinkPortProvider);
+    unawaited(
+      port.initialLink().then((url) {
+        if (url != null && mounted) _router.go(analyzeLocationFor(url));
+      }),
+    );
+    _sharedLinks = port.links().listen((url) {
+      if (mounted) _router.go(analyzeLocationFor(url));
+    });
   }
 
   @override

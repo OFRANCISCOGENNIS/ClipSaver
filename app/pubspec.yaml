@@ -50,3 +50,28 @@ flutter:
   uses-material-design: true
   # Gera AppLocalizations a partir de lib/l10n/*.arb (ver l10n.yaml).
   generate: true
+
+  # As fontes da seção 6 vão empacotadas. Elas eram declaradas no tema
+  # desde a fase 3 e não existiam no bundle: o app caía na fonte padrão da
+  # plataforma em todos os alvos — e na web o motor ainda buscava Roboto em
+  # fonts.gstatic.com a cada carregamento, uma chamada a um terceiro num
+  # app que pede consentimento explícito para telemetria.
+  #
+  # Subconjunto latino, só os pesos que o tema referencia: cada peso extra
+  # é ~65KB no primeiro carregamento da web, e peso que ninguém usa é peso
+  # morto. Ambas são OFL, e o texto da licença viaja junto no diretório.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400

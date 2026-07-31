@@ -84,20 +84,27 @@ publicada para ligar as duas pontas. Detalhes em
 
 | Métrica | Valor | Mínimo |
 |---|---|---|
-| Testes | 477 (app) + 136 (servidor) | — |
-| Cobertura domínio/aplicação (app) | 97,3% | 95% |
-| Cobertura total (app) | 90,8% | 80% |
+| Testes | 516 (app) + 136 (servidor) + 7 (navegador) | — |
+| Cobertura domínio/aplicação (app) | 97,4% | 95% |
+| Cobertura total (app) | 89,6% | 80% |
 | Cobertura de linhas (servidor) | 98,4% | 95% |
 | Cobertura de branches (servidor) | 94,1% | 90% |
 
 Os gates são por camada, não globais: um número único esconderia uma
 interface bem testada flutuando sobre uma máquina de estados sem teste.
 
+Os sete testes de navegador (`e2e/`) rodam contra a árvore `site/` montada
+— o mesmo artefato que o Pages publica. Eles cobrem o que a suíte de
+widget estruturalmente não vê, porque roda sem navegador nenhum: os
+binários de SQLite/WASM carregando, o `base-href`, um deep link, e para
+onde o app faz requisição. Duas chamadas a terceiros já foram encontradas
+assim, depois de publicadas.
+
 ## Pipeline
 
 | Workflow | Quando | O que faz |
 |---|---|---|
-| `ci.yml` | push e PR | lint, testes, gates de cobertura, build da imagem com smoke, render dos manifestos |
+| `ci.yml` | push e PR | lint, testes, gates de cobertura, testes de navegador sobre o site montado, build da imagem com smoke, render dos manifestos |
 | `pages.yml` | push em `main` que toque `app/` ou `prototype/` | publica o protótipo e o PWA no GitHub Pages |
 | `release.yml` | tag `v*` | builds das 6 plataformas + checksums |
 | `deploy.yml` | push em `main` que toque `server/` | imagem por digest → staging → smoke → produção com aprovação |
@@ -123,8 +130,27 @@ interface bem testada flutuando sobre uma máquina de estados sem teste.
 | 4 | Library, Search e Converter | ✅ concluída |
 | 5 | Premium, IA, Settings e polimento | ✅ concluída |
 | 6 | CI/CD, builds de release e documentação final | ✅ concluída |
+| 7 | Acessibilidade, notificações, link compartilhado e testes de navegador | ✅ concluída |
 
 ### O que fica pendente, explicitamente
+
+- **Fila em segundo plano**: sair do app no Android ou no iOS suspende os
+  downloads. Falta um foreground service e um `BGTaskScheduler`. Para um
+  gerenciador de downloads isso não é um extra, e é a maior lacuna aberta.
+- **Ponte do compartilhamento no iOS**: o Android já entrega o link
+  compartilhado à tela Analyze (`MainActivity.kt` + canal de plataforma).
+  O iOS precisa de uma Share Extension, que exige mexer no projeto Xcode.
+- **Código nativo não executado**: o `MainActivity.kt` do compartilhamento
+  e o adapter de notificações do `flutter_local_notifications` compilam e
+  têm o lado Dart testado, mas nunca rodaram num aparelho — não há
+  emulador nem dispositivo neste ambiente. O que está provado é o
+  contrato, não a entrega.
+- **Fonte de fallback do motor web**: o app não busca mais o CanvasKit nem
+  as próprias fontes em servidores da Google, mas o motor do Flutter ainda
+  pede a Roboto de fallback em `fonts.gstatic.com`. Há um teste de
+  navegador que trava exatamente essa exceção, então uma segunda chamada a
+  terceiro quebra o CI. Resolver exige decidir o que fazer com o conjunto
+  Noto inteiro, grande demais para entrar sem decisão.
 
 - **Assinatura de iOS/macOS**: exige certificado, perfil de provisionamento
   e notarização. O build de iOS sai sem assinatura — compila, não é

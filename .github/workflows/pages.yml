@@ -71,7 +71,13 @@ jobs:
           # tela Analyze reporta erro de conexão em vez de fingir veredito.
           API_BASE_URL: ${{ vars.VIDORA_API_BASE_URL }}
         run: |
+          # --no-web-resources-cdn empacota o CanvasKit em vez de buscá-lo
+          # em gstatic.com a cada carregamento. Sem isso o app publicado
+          # não abre offline e faz uma chamada a um terceiro que ninguém
+          # autorizou — num app que pede consentimento explícito para
+          # telemetria, isso é contradição, não detalhe.
           flutter build web --release \
+            --no-web-resources-cdn \
             --base-href "/${{ github.event.repository.name }}/app/" \
             --dart-define=VIDORA_API_BASE_URL="${API_BASE_URL}"
 

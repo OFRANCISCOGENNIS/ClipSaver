@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/api_client.dart';
 import '../core/network/dio_api_client.dart';
 import '../core/platform/clipboard_reader.dart';
+import '../core/platform/shared_links.dart';
 import '../core/platform/system_notifications.dart';
 import '../core/storage/database.dart';
 import '../core/storage/download_file_system.dart';
@@ -143,6 +144,12 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
   ref.onDispose(manager.dispose);
   return manager;
 });
+
+/// Links arriving from another app's share sheet. A no-op on desktop and
+/// web, decided by the conditional import.
+final sharedLinkPortProvider = Provider<SharedLinkPort>(
+  (ref) => createSharedLinkPort(),
+);
 
 /// System notifications. Overridden with a fake in tests; a no-op on web
 /// and Windows, decided by the conditional import, not by an `if` here.
