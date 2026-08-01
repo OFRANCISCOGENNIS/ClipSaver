@@ -32,10 +32,9 @@ RUN npm ci --no-audit --no-fund
 COPY prisma.config.ts ./
 COPY prisma ./prisma
 COPY --from=build /app/dist ./dist
-# Prisma 7 writes the generated client into @prisma/client itself (v6 used
-# node_modules/.prisma). Copying the stale path would leave the runtime
-# with the package but none of the generated code.
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+# Prisma 7 writes the generated client into @prisma/client itself. Older
+# versions used node_modules/.prisma, which does not exist in this build.
 COPY --from=build /app/node_modules/@prisma/client ./node_modules/@prisma/client
 USER node
 CMD ["node", "dist/main.js"]
+
