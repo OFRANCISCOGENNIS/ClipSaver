@@ -28,7 +28,7 @@ COPY package.json package-lock.json ./
 # Prisma runs once at deploy time to create/update the schema. Keep its CLI
 # available in the runtime image; the application still runs as the unprivileged
 # `node` user afterwards.
-RUN npm ci --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund
 COPY prisma.config.ts ./
 COPY prisma ./prisma
 COPY --from=build /app/dist ./dist
